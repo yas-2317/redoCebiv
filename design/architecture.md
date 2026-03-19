@@ -279,6 +279,20 @@ NEXT_PUBLIC_APP_URL=            # https://redocebiv.app
 
 ---
 
+## Supabase Storage 設定
+
+| 項目 | 値 |
+|---|---|
+| バケット名 | `project-zips`（非公開） |
+| ファイルサイズ上限 | 20MB |
+| 許可する拡張子 | `.zip` のみ |
+| パス構造 | `{user_id}/{project_id}/source.zip` |
+| 保持期間 | 解析完了後に即削除（`zip_storage_path = NULL`） |
+
+**UI上の案内文**: 「node_modulesを除いてZIP化してください（例: `zip -r app.zip . --exclude 'node_modules/*'`）」
+
+---
+
 ## デプロイ構成
 
 | 環境 | サービス | 設定 |
