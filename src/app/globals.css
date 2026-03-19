@@ -151,11 +151,12 @@
 
 .card-delete-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: -8px;
+  right: -8px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s;
+  z-index: 1;
 }
 .project-card-wrapper:hover .card-delete-btn,
 .project-card-wrapper:focus-within .card-delete-btn {
