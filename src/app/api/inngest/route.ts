@@ -5,5 +5,4 @@ import { analyzeProject, analyzeProjectOnFailure } from '@/lib/inngest/functions
 export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [analyzeProject, analyzeProjectOnFailure],
-  isDev: process.env.NODE_ENV !== 'production',
 })

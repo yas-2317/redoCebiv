@@ -87,7 +87,18 @@ export async function POST(request: NextRequest) {
     .eq('id', project.id)
 
   // Inngest ジョブを起動
-  await inngest.send({ name: 'project/analyze', data: { projectId: project.id } })
+  try {
+    await inngest.send({ name: 'project/analyze', data: { projectId: project.id } })
+  } catch (err) {
+    console.error('Inngest send error:', err)
+    await serviceClient.rpc('refund_credits', {
+      p_user_id: user.id,
+      p_amount: 5,
+      p_project_id: project.id,
+    })
+    await supabase.from('projects').update({ status: 'error' }).eq('id', project.id)
+    return NextResponse.json({ error: 'QUEUE_FAILED' }, { status: 500 })
+  }
 
   return NextResponse.json({ projectId: project.id }, { status: 202 })
 }

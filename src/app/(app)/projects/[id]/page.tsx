@@ -59,6 +59,7 @@ export default async function ProjectPage({
         .from('challenge_submissions')
         .select('challenge_id, grade')
         .eq('user_id', user!.id)
+        .eq('project_id', id)
         .order('created_at', { ascending: false }),
     ])
 
@@ -159,7 +160,7 @@ export default async function ProjectPage({
       <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', alignItems: 'start' }}>
 
         {/* Features */}
-        <section>
+        <section style={{ minWidth: 0 }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '12px' }}>
             Features
             <span style={{ fontSize: '12px', fontWeight: 400, color: '#9ca3af', marginLeft: '8px' }}>
@@ -179,7 +180,7 @@ export default async function ProjectPage({
                       {CATEGORY_LABEL[cat] ?? cat}
                     </span>
                   </div>
-                  {(byCategory[cat] ?? []).map((uc, ucIndex) => {
+                  {[...(byCategory[cat] ?? [])].sort((a, b) => (tracedIds.has(a.id) ? 1 : 0) - (tracedIds.has(b.id) ? 1 : 0)).map((uc, ucIndex) => {
                     const isTraced = tracedIds.has(uc.id)
                     return (
                       <div
@@ -232,7 +233,7 @@ export default async function ProjectPage({
         </section>
 
         {/* Challenges */}
-        <section style={{ position: 'sticky', top: '80px' }}>
+        <section style={{ minWidth: 0 }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '12px' }}>
             Challenges
             <span style={{ fontSize: '12px', fontWeight: 400, color: '#9ca3af', marginLeft: '8px' }}>
@@ -246,7 +247,11 @@ export default async function ProjectPage({
             </div>
           ) : (
             <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-              {(challenges ?? []).map((ch, i) => {
+              {[...(challenges ?? [])].sort((a, b) => {
+                const aSolved = submissionByChallenge[a.id] && submissionByChallenge[a.id] !== 'missed'
+                const bSolved = submissionByChallenge[b.id] && submissionByChallenge[b.id] !== 'missed'
+                return (aSolved ? 1 : 0) - (bSolved ? 1 : 0)
+              }).map((ch, i) => {
                 const grade = submissionByChallenge[ch.id]
                 const icon = grade ? GRADE_ICON[grade] : null
                 const isSolved = grade && grade !== 'missed'

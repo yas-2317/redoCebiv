@@ -126,10 +126,11 @@ export async function enrichProjectsWithProgress(
     chIdToProject[ch.id] = ch.project_id
   }
 
-  const solvedByProject: Record<string, number> = {}
+  const solvedByProject: Record<string, Set<string>> = {}
   for (const s of submissionCounts ?? []) {
     const pid = (s.challenges as { project_id: string }).project_id
-    solvedByProject[pid] = (solvedByProject[pid] ?? 0) + 1
+    if (!solvedByProject[pid]) solvedByProject[pid] = new Set()
+    solvedByProject[pid].add(s.challenge_id)
   }
 
   return projects.map(p => ({
@@ -137,6 +138,6 @@ export async function enrichProjectsWithProgress(
     usecaseCount: ucByProject[p.id] ?? 0,
     traceCount: traceByProject[p.id] ?? 0,
     challengeCount: chByProject[p.id] ?? 0,
-    solvedCount: solvedByProject[p.id] ?? 0,
+    solvedCount: solvedByProject[p.id]?.size ?? 0,
   }))
 }

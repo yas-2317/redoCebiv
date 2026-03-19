@@ -50,23 +50,26 @@ export async function POST(
   const { selectedFiles, answerText, usedHint } = body
   const answer = challenge.answer as ChallengeAnswer
 
-  // Rule-based grade
-  const fileMatch = selectedFiles.some(f => answer.correct_files.includes(f))
+  // Rule-based grade: all correct_files must be selected
+  const fileMatch = answer.correct_files.every(f => selectedFiles.includes(f))
   const grade: 'self' | 'with_hint' | 'missed' = fileMatch
     ? usedHint ? 'with_hint' : 'self'
     : 'missed'
 
-  // Check for existing submission → reuse explanation if exists
+  // Check for existing submission → reuse explanation only if grade matches
   const { data: existing } = await supabase
     .from('challenge_submissions')
-    .select('id, explanation')
+    .select('id, explanation, grade')
     .eq('challenge_id', challengeId)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
     .single()
 
-  let explanation = existing?.explanation ?? ''
+  let explanation = ''
+  if (existing?.explanation && existing.grade === grade) {
+    explanation = existing.explanation
+  }
 
   if (!explanation) {
     explanation = await generateExplanation({
