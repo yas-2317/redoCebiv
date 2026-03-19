@@ -3,15 +3,13 @@ import { createClient } from '@/lib/supabase/server'
 import { FolderOpen, Layers, Search, Zap, Trophy } from 'lucide-react'
 import ProjectCard from '@/components/project/ProjectCard'
 import { enrichProjectsWithProgress } from './projects/page'
+import { getPlanInfo } from '@/lib/billing/config'
 
 const GRADE_ICON: Record<string, string> = {
   self: '✅',
   with_hint: '🟡',
   missed: '❌',
 }
-
-const PLAN_MAX: Record<string, number> = { free: 100, pro: 500 }
-const PLAN_LABEL: Record<string, string> = { free: 'Free', pro: 'Pro' }
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -35,12 +33,12 @@ export default async function HomePage() {
       .select('id, grade, created_at, challenges(title, projects(name, id))')
       .eq('user_id', user!.id)
       .order('created_at', { ascending: false })
-      .limit(20),
+      .limit(60),
     supabase
       .from('traces')
       .select('id, created_at, usecase_id, usecases(name, project_id, projects(name, id))')
       .order('created_at', { ascending: false })
-      .limit(20),
+      .limit(60),
   ])
 
   const projects = allProjects ?? []
@@ -54,9 +52,9 @@ export default async function HomePage() {
   const totalProjects = readyProjects.length
   const totalChallenges = submissions?.length ?? 0
   const creditBalance = profile?.credit_balance ?? 0
-  const plan = profile?.plan ?? 'free'
-  const planMax = PLAN_MAX[plan] ?? 100
-  const planLabel = PLAN_LABEL[plan] ?? 'Free'
+  const planInfo = getPlanInfo(profile?.plan ?? 'wanderer')
+  const planMax = planInfo.displayMax
+  const planLabel = planInfo.label
   const creditPct = Math.max(0, Math.min(100, Math.round((creditBalance / planMax) * 100)))
 
   // Grade counts
@@ -80,6 +78,26 @@ export default async function HomePage() {
     return { day, traces: t, challenges: c, total: t + c }
   })
   const chartMax = Math.max(...chartData.map(d => d.total), 1)
+
+  // 週間・月間統計
+  const now = new Date()
+  const msDay = 86_400_000
+  const thisWeekTotal = chartData.reduce((s, d) => s + d.total, 0)
+  const lastWeekTotal = (() => {
+    const start = new Date(now.getTime() - 14 * msDay)
+    const end   = new Date(now.getTime() -  7 * msDay)
+    const t = (traces ?? []).filter(x => { const d = new Date(x.created_at); return d >= start && d < end }).length
+    const c = (submissions ?? []).filter(x => { const d = new Date(x.created_at); return d >= start && d < end }).length
+    return t + c
+  })()
+  const monthlyTotal = (() => {
+    const start = new Date(now.getTime() - 30 * msDay)
+    const t = (traces ?? []).filter(x => new Date(x.created_at) >= start).length
+    const c = (submissions ?? []).filter(x => new Date(x.created_at) >= start).length
+    return t + c
+  })()
+  const weekDiff = thisWeekTotal - lastWeekTotal
+  const weekDiffPct = lastWeekTotal > 0 ? Math.round(Math.abs(weekDiff) / lastWeekTotal * 100) : null
 
   type ActivityItem = { icon: string; label: string; projectName: string; createdAt: string }
 
@@ -190,10 +208,40 @@ export default async function HomePage() {
         </div>
 
         {/* Activity chart */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>Activity</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column' }}>
+          <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '14px' }}>Activity</p>
+
+          {/* Stats row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+            {[
+              {
+                label: 'This week',
+                value: thisWeekTotal,
+                sub: null,
+              },
+              {
+                label: 'vs last week',
+                value: weekDiff === 0 ? '—' : `${weekDiff > 0 ? '+' : ''}${weekDiff}`,
+                sub: weekDiffPct != null ? `${weekDiff >= 0 ? '↑' : '↓'}${weekDiffPct}%` : null,
+                color: weekDiff > 0 ? '#16a34a' : weekDiff < 0 ? '#dc2626' : '#9ca3af',
+              },
+              {
+                label: 'Monthly',
+                value: monthlyTotal,
+                sub: null,
+              },
+            ].map(({ label, value, sub, color }) => (
+              <div key={label} style={{ background: '#f9fafb', borderRadius: '8px', padding: '10px 12px' }}>
+                <p style={{ fontSize: '10px', color: '#9ca3af', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '4px' }}>{label}</p>
+                <p style={{ fontSize: '20px', fontWeight: 700, color: color ?? '#111827', lineHeight: 1 }}>{value}</p>
+                {sub && <p style={{ fontSize: '10px', color: color, marginTop: '2px' }}>{sub}</p>}
+              </div>
+            ))}
+          </div>
+
+          {/* Chart */}
+          <div style={{ marginTop: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', marginBottom: '10px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#6b7280' }}>
                 <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: '#1d6187' }} />
                 Traces
@@ -203,8 +251,8 @@ export default async function HomePage() {
                 Challenges
               </span>
             </div>
+            <ActivityChart data={chartData} max={chartMax} />
           </div>
-          <ActivityChart data={chartData} max={chartMax} />
         </div>
 
         {/* What you've got back */}

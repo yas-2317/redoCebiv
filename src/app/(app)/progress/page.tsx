@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Trophy, Search, FolderOpen } from 'lucide-react'
+import { getPlanInfo } from '@/lib/billing/config'
 
 const GRADE_ICON: Record<string, string> = {
   self: '✅',
@@ -19,10 +20,6 @@ const ACTION_LABEL: Record<string, string> = {
   manual_adjustment: 'Adjustment',
 }
 
-const PLAN_MAX: Record<string, number> = {
-  free: 100,
-  pro: 500,
-}
 
 export default async function ProgressPage() {
   const supabase = await createClient()
@@ -70,8 +67,8 @@ export default async function ProgressPage() {
   }
 
   const creditBalance = profile?.credit_balance ?? 0
-  const plan = profile?.plan ?? 'free'
-  const planMax = PLAN_MAX[plan] ?? 100
+  const planInfo = getPlanInfo(profile?.plan ?? 'wanderer')
+  const planMax = planInfo.displayMax
   // used = grant - balance, but we only know balance; show balance as "remaining"
   const usedPct = Math.max(0, Math.min(100, Math.round(((planMax - creditBalance) / planMax) * 100)))
 
@@ -217,7 +214,7 @@ export default async function ProgressPage() {
               <span style={{ fontSize: '32px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>{creditBalance}</span>
               <span style={{ fontSize: '12px', color: '#9ca3af' }}>/ {planMax} cr</span>
             </div>
-            <p style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'capitalize' }}>{plan} plan</p>
+            <p style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'capitalize' }}>{planInfo.label} plan</p>
           </div>
 
           {/* Progress bar — Make.com style */}
