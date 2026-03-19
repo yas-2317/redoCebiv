@@ -148,7 +148,7 @@ export default async function HomePage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
       {/* 上段 3列: Stats | Activity chart | What you've got back */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: '16px', alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'stretch' }}>
 
         {/* Stats 2×3 grid */}
         <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -325,7 +325,7 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', alignItems: 'stretch' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', alignItems: 'stretch' }}>
             {recentProjectsWithProgress.map(p => (
               <ProjectCard
                 key={p.id}

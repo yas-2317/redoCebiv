@@ -1,0 +1,4 @@
+export const TOKEN_LIMITS = {
+  USECASE_EXTRACTION: 60_000,
+  CHALLENGE_GENERATION: 40_000,
+} as const

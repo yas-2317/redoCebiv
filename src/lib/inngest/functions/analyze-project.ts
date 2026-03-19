@@ -2,6 +2,7 @@ import { inngest } from '@/lib/inngest/client'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { extractZip, selectFilesForAnalysis, buildFileContext } from '@/lib/zip'
 import { extractUsecases, generateChallenges } from '@/lib/anthropic/analyze'
+import { TOKEN_LIMITS } from '@/lib/anthropic/constants'
 
 // Inngestジョブ内ではサービスロールクライアントを使う（cookiesが使えないため）
 function createServiceClient() {
@@ -70,7 +71,7 @@ export const analyzeProject = inngest.createFunction(
 
     // Step 3: ユースケース抽出（Claude Sonnet）
     const usecases = await step.run('extract-usecases', async () => {
-      const selectedFiles = selectFilesForAnalysis(files, 60_000)
+      const selectedFiles = selectFilesForAnalysis(files, TOKEN_LIMITS.USECASE_EXTRACTION)
       const fileContext = buildFileContext(selectedFiles)
       return extractUsecases(fileContext)
     })
@@ -92,7 +93,7 @@ export const analyzeProject = inngest.createFunction(
 
     // Step 5: 課題生成（Claude Haiku）
     await step.run('generate-challenges', async () => {
-      const selectedFiles = selectFilesForAnalysis(files, 40_000)
+      const selectedFiles = selectFilesForAnalysis(files, TOKEN_LIMITS.CHALLENGE_GENERATION)
       const fileContext = buildFileContext(selectedFiles)
       const challenges = await generateChallenges(fileContext, usecases)
 

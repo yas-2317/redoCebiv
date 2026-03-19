@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ProjectCard from '@/components/project/ProjectCard'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export default async function ProjectsPage() {
   const supabase = await createClient()
@@ -42,7 +43,7 @@ export default async function ProjectsPage() {
           </Link>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
           {projectsWithProgress.map(p => (
             <ProjectCard
               key={p.id}
@@ -74,8 +75,7 @@ type ProjectRow = {
 }
 
 export async function enrichProjectsWithProgress(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  supabase: SupabaseClient,
   userId: string,
   projects: ProjectRow[]
 ) {
@@ -112,7 +112,7 @@ export async function enrichProjectsWithProgress(
 
   const traceByProject: Record<string, number> = {}
   for (const t of traceCounts ?? []) {
-    const pid = (t.usecases as { project_id: string }).project_id
+    const pid = (t.usecases as unknown as { project_id: string }).project_id
     traceByProject[pid] = (traceByProject[pid] ?? 0) + 1
   }
 
@@ -128,7 +128,7 @@ export async function enrichProjectsWithProgress(
 
   const solvedByProject: Record<string, Set<string>> = {}
   for (const s of submissionCounts ?? []) {
-    const pid = (s.challenges as { project_id: string }).project_id
+    const pid = (s.challenges as unknown as { project_id: string }).project_id
     if (!solvedByProject[pid]) solvedByProject[pid] = new Set()
     solvedByProject[pid].add(s.challenge_id)
   }
