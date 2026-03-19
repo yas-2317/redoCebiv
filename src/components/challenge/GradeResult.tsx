@@ -14,114 +14,129 @@ interface GradeResultProps {
 }
 
 const GRADE_CONFIG = {
-  self: {
-    icon: '✅',
-    label: "You've got it back.",
-    color: 'text-green-700',
-    bg: 'bg-green-50 border-green-200',
-  },
-  with_hint: {
-    icon: '🟡',
-    label: 'Almost — you needed a nudge.',
-    color: 'text-yellow-700',
-    bg: 'bg-yellow-50 border-yellow-200',
-  },
-  missed: {
-    icon: '❌',
-    label: "Not yet — here's how the AI built it.",
-    color: 'text-red-700',
-    bg: 'bg-red-50 border-red-200',
-  },
+  self:      { icon: '✅', label: "You've got it back.",             color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
+  with_hint: { icon: '🟡', label: 'Almost — you needed a nudge.',    color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  missed:    { icon: '❌', label: "Not yet — here's how the AI built it.", color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
 }
 
 export function GradeResult({
-  projectId,
-  grade,
-  explanation,
-  correctFiles,
-  correctCode,
-  changeType,
-  relatedExamples,
-  onRetry,
+  projectId, grade, explanation, correctFiles, correctCode, changeType, relatedExamples, onRetry,
 }: GradeResultProps) {
-  const config = GRADE_CONFIG[grade]
+  const cfg = GRADE_CONFIG[grade]
+
+  const sectionStyle = {
+    border: '1px solid #e5e7eb',
+    borderRadius: '10px',
+    background: 'white',
+    padding: '16px 20px',
+  }
+
+  const labelStyle = {
+    fontSize: '11px',
+    fontWeight: 600 as const,
+    color: '#9ca3af',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
+    marginBottom: '8px',
+  }
 
   return (
-    <div className="space-y-4">
-      <div className={`rounded-lg border p-4 ${config.bg}`}>
-        <p className={`text-base font-semibold ${config.color}`}>
-          {config.icon} {config.label}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+      {/* Grade banner */}
+      <div style={{ border: `1px solid ${cfg.border}`, borderRadius: '10px', background: cfg.bg, padding: '14px 18px' }}>
+        <p style={{ fontSize: '15px', fontWeight: 600, color: cfg.color }}>
+          {cfg.icon} {cfg.label}
         </p>
       </div>
 
-      <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-            Correct file{correctFiles.length > 1 ? 's' : ''}
-          </p>
-          <ul className="mt-1 space-y-0.5">
-            {correctFiles.map(f => (
-              <li key={f} className="font-mono text-sm text-gray-800">{f}</li>
-            ))}
-          </ul>
+      {/* Correct files + code + change type */}
+      <div style={sectionStyle}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <p style={labelStyle}>Correct file{correctFiles.length > 1 ? 's' : ''}</p>
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {correctFiles.map(f => (
+                <li key={f} style={{ fontFamily: 'monospace', fontSize: '13px', color: '#111827' }}>{f}</li>
+              ))}
+            </ul>
+          </div>
+
+          {correctCode && (
+            <div>
+              <p style={labelStyle}>Correct change</p>
+              <code style={{ display: 'block', background: '#f3f4f6', borderRadius: '6px', padding: '10px 14px', fontSize: '13px', color: '#111827' }}>
+                {correctCode}
+              </code>
+            </div>
+          )}
+
+          {changeType && (
+            <div>
+              <p style={labelStyle}>Change type</p>
+              <p style={{ fontSize: '13px', color: '#374151' }}>{changeType}</p>
+            </div>
+          )}
         </div>
-
-        {correctCode && (
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              Correct change
-            </p>
-            <code className="mt-1 block rounded bg-gray-100 px-3 py-2 text-sm text-gray-800">
-              {correctCode}
-            </code>
-          </div>
-        )}
-
-        {changeType && (
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              Change type
-            </p>
-            <p className="mt-1 text-sm text-gray-700">{changeType}</p>
-          </div>
-        )}
       </div>
 
+      {/* Explanation */}
       {explanation && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Explanation</p>
-          <p className="mt-2 text-sm leading-relaxed text-gray-700">{explanation}</p>
+        <div style={{ ...sectionStyle, background: '#f9fafb' }}>
+          <p style={labelStyle}>Explanation</p>
+          <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.7' }}>{explanation}</p>
         </div>
       )}
 
+      {/* Related examples */}
       {relatedExamples.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-            Similar patterns in this codebase
-          </p>
-          <ul className="mt-2 list-disc space-y-1 pl-4">
+        <div style={sectionStyle}>
+          <p style={labelStyle}>Similar patterns in this codebase</p>
+          <ul style={{ paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {relatedExamples.map((ex, i) => (
-              <li key={i} className="text-sm text-gray-600">{ex}</li>
+              <li key={i} style={{ fontSize: '13px', color: '#6b7280' }}>{ex}</li>
             ))}
           </ul>
         </div>
       )}
 
-      <div className="flex gap-3 pt-2">
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: '10px', paddingTop: '4px' }}>
         <button
           type="button"
           onClick={onRetry}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          style={{
+            padding: '8px 18px',
+            borderRadius: '8px',
+            border: '1px solid #d1d5db',
+            background: 'white',
+            fontSize: '13px',
+            fontWeight: 500,
+            color: '#374151',
+            cursor: 'pointer',
+          }}
         >
           Try again
         </button>
         <Link
           href={`/projects/${projectId}`}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          style={{
+            padding: '8px 18px',
+            borderRadius: '8px',
+            border: '1px solid #d1d5db',
+            background: 'white',
+            fontSize: '13px',
+            fontWeight: 500,
+            color: '#374151',
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+          }}
         >
           ← Back to project
         </Link>
       </div>
+
     </div>
   )
 }
