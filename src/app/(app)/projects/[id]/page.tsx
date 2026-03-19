@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { StackBadge } from '@/components/stack/StackBadge'
 
 const DIFFICULTY_STARS: Record<number, string> = { 1: '★☆☆', 2: '★★☆', 3: '★★★' }
 
@@ -104,15 +105,7 @@ export default async function ProjectPage({
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>{project.name}</h1>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
             {(project.stack ?? []).map((s: string) => (
-              <span
-                key={s}
-                style={{
-                  padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 500,
-                  color: '#1d6187', background: '#e2eef5', border: '1px solid #97bbd0',
-                }}
-              >
-                {s}
-              </span>
+              <StackBadge key={s} label={s} />
             ))}
             {project.file_count != null && (
               <span style={{ fontSize: '12px', color: '#9ca3af', marginLeft: '4px' }}>
