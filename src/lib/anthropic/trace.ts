@@ -20,6 +20,11 @@ export interface GeneratedTrace {
   explanation: string
 }
 
+const SYSTEM_PROMPT = `You are an expert at reading Next.js / React source code and explaining it clearly to non-engineers.
+When given a use case and project files, identify exactly which files implement it and walk through the flow step by step.
+Focus only on files directly involved in the feature — skip unrelated utilities or config.
+Keep language simple: the person reading this built the app with AI and should immediately recognize what you describe.`
+
 export async function generateTrace(
   usecase: { name: string; description: string },
   fileContext: string
@@ -27,37 +32,45 @@ export async function generateTrace(
   const message = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
+    system: [
+      {
+        type: 'text',
+        text: SYSTEM_PROMPT,
+        cache_control: { type: 'ephemeral' },
+      },
+    ],
     messages: [
       {
         role: 'user',
-        content: `You are an expert at analyzing Next.js / React app code and explaining it clearly to beginners.
+        content: [
+          {
+            type: 'text',
+            text: `Project files:\n${fileContext}`,
+            cache_control: { type: 'ephemeral' },
+          },
+          {
+            type: 'text',
+            text: `Trace the use case: "${usecase.name}"
+${usecase.description ? `Description: ${usecase.description}` : ''}
 
-Analyze the code related to the use case "${usecase.name}" and return:
-1. Related files and the role of each file
-2. Processing flow (input → branch → state update → display update)
-3. A plain-English explanation written from the user's perspective.
-   - Start from what the user originally wanted to achieve
-   - Then explain how the AI answered with this code
-   - Use this framing: "You wanted [X], so the AI built [Y] to make that happen."
-   - Keep it conversational and simple — 2 to 3 sentences max
-
-Output format (JSON only, no explanation or \`\`\` before/after):
+Output JSON only, no explanation or \`\`\` wrapper:
 {
   "related_files": [
-    {"path": "components/AddTaskForm.tsx", "role": "UI and input management", "keyLines": [18, 24]}
+    {"path": "components/AddTaskForm.tsx", "role": "Form UI and input state", "keyLines": [18, 24]}
   ],
   "flow": [
-    {"step": 1, "label": "Input", "description": "User types text into the input field", "file": "components/AddTaskForm.tsx", "line": 18}
+    {"step": 1, "label": "Input", "description": "User types into the input field", "file": "components/AddTaskForm.tsx", "line": 18}
   ],
-  "explanation": "You wanted users to be able to add tasks, so the AI built a form that captures input and updates the list on submit."
+  "explanation": "You wanted users to add tasks, so the AI built a form that captures input and appends it to the list on submit."
 }
 
----
-Use case: ${usecase.name}
-Description: ${usecase.description}
-
-Related files:
-${fileContext}`,
+Rules:
+- related_files: 2–5 files directly involved in this feature only
+- keyLines: the 1–3 most important line numbers to understand the feature
+- flow: 3–6 steps tracing the user action from UI to state or data
+- explanation: 2 sentences max, start with "You wanted..." in plain language`,
+          },
+        ],
       },
     ],
   })
@@ -75,7 +88,7 @@ ${fileContext}`,
       messages: [
         {
           role: 'user',
-          content: `Fix the following output to JSON format only. Remove any explanation and return only the JSON object:\n\n${text}`,
+          content: `Fix the following output to valid JSON only. Return only the JSON object, no explanation:\n\n${text}`,
         },
       ],
     })

@@ -14,29 +14,39 @@ export interface GeneratedProposal {
   candidates: ProposalCandidate[]
 }
 
+const SYSTEM_PROMPT = `You are an expert at guiding code changes in Next.js / React apps for non-engineers.
+Given a user's change intent and the project files, identify the best 1–3 candidate locations to make the change.
+Be precise: point to the exact file and line, show the current code snippet, and explain clearly why that is the right place.
+Prioritize the most direct location — the one a beginner could find and confidently edit.`
+
 export async function generateProposal(
   intent: string,
   fileContext: string
 ): Promise<GeneratedProposal> {
   const message = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: 'claude-sonnet-4-6',
     max_tokens: 1024,
+    system: [
+      {
+        type: 'text',
+        text: SYSTEM_PROMPT,
+        cache_control: { type: 'ephemeral' },
+      },
+    ],
     messages: [
       {
         role: 'user',
-        content: `You are an expert at guiding changes in Next.js / React apps.
+        content: [
+          {
+            type: 'text',
+            text: `Project files:\n${fileContext}`,
+            cache_control: { type: 'ephemeral' },
+          },
+          {
+            type: 'text',
+            text: `Change intent: ${intent}
 
-For the user's change intent, identify up to 3 candidates for what file and where to change, explained clearly for beginners.
-
-change_type values:
-- "text": text/label change
-- "condition": condition change
-- "validation": add validation
-- "display": display change
-
-difficulty values: 1 (easy) / 2 (medium) / 3 (hard)
-
-Output format (JSON only, no explanation or \`\`\` before/after):
+Output JSON only, no explanation or \`\`\` wrapper:
 {
   "change_type": "validation",
   "difficulty": 2,
@@ -45,17 +55,17 @@ Output format (JSON only, no explanation or \`\`\` before/after):
       "file": "components/AddTaskForm.tsx",
       "line": 18,
       "codeSnippet": "disabled={text.trim() === ''}",
-      "reason": "Controlling button enabled/disabled state inside the UI component is the standard React pattern",
+      "reason": "This line directly controls the button state in the UI — the most straightforward place to adjust input validation",
       "changeType": "Add validation"
     }
   ]
 }
 
----
-Change intent: ${intent}
-
-Codebase (main files):
-${fileContext}`,
+change_type: "text" | "condition" | "validation" | "display"
+difficulty: 1 (single line, easy) | 2 (logic change, moderate) | 3 (multiple files, hard)
+candidates: 1–3 locations ordered from most to least recommended`,
+          },
+        ],
       },
     ],
   })
