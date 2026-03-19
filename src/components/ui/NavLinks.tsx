@@ -8,6 +8,7 @@ export default function NavLinks() {
 
   const links = [
     { href: '/', label: 'Home' },
+    { href: '/projects', label: 'Projects' },
     { href: '/progress', label: 'Progress' },
   ]
 
