@@ -149,7 +149,7 @@
   transform: translateY(-1px);
 }
 
-/* Dashboard main grid — responsive */
+/* Dashboard main layout — responsive */
 .dashboard-main-grid {
   display: grid;
   grid-template-columns: 3fr 2fr;
