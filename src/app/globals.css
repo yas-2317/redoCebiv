@@ -130,3 +130,34 @@
     @apply font-sans;
   }
 }
+
+/* ProjectCard */
+@keyframes shimmer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.card-shimmer { animation: shimmer-pulse 1.6s ease-in-out infinite; }
+
+.project-card {
+  transition: box-shadow 0.15s, transform 0.15s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.project-card-link:focus-visible { outline: none; }
+.project-card-link:hover .project-card,
+.project-card-link:focus-visible .project-card {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Dashboard main grid — responsive */
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .dashboard-main-grid {
+    grid-template-columns: 1fr;
+  }
+}

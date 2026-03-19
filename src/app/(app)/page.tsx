@@ -301,7 +301,7 @@ export default async function HomePage() {
       </div>
 
       {/* 下段: プロジェクト(60%) + アクティビティ(40%) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', alignItems: 'start' }}>
+      <div className="dashboard-main-grid">
 
         {/* プロジェクト 3カラムグリッド */}
         <div>
