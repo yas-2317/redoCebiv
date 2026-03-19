@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { DeleteProjectButton } from '@/components/project/DeleteProjectButton'
 
 const DIFFICULTY_STARS: Record<number, string> = { 1: '★☆☆', 2: '★★☆', 3: '★★★' }
 
@@ -122,22 +121,19 @@ export default async function ProjectPage({
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          <DeleteProjectButton projectId={id} />
-          <Link
-            href={`/projects/${id}/change`}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              padding: '9px 18px', borderRadius: '9px',
-              background: '#1d6187', color: 'white',
-              fontSize: '13px', fontWeight: 600,
-              textDecoration: 'none',
-              boxShadow: '0 1px 3px rgba(79,70,229,0.3)',
-            }}
-          >
-            Find changes ▶
-          </Link>
-        </div>
+        <Link
+          href={`/projects/${id}/change`}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            padding: '9px 18px', borderRadius: '9px',
+            background: '#1d6187', color: 'white',
+            fontSize: '13px', fontWeight: 600,
+            textDecoration: 'none', flexShrink: 0,
+            boxShadow: '0 1px 3px rgba(79,70,229,0.3)',
+          }}
+        >
+          Find changes ▶
+        </Link>
       </div>
 
       {/* Stats row */}

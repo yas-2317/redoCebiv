@@ -149,6 +149,20 @@
   transform: translateY(-1px);
 }
 
+.card-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.project-card-wrapper:hover .card-delete-btn,
+.project-card-wrapper:focus-within .card-delete-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* Dashboard main layout — responsive */
 .dashboard-main-grid {
   display: grid;

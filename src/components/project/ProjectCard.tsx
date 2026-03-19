@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { DeleteProjectButton } from './DeleteProjectButton'
 
 interface Props {
   id: string
@@ -29,6 +30,7 @@ export default function ProjectCard({
   const href = isReady ? `/projects/${id}` : `/projects/${id}/analyzing`
 
   return (
+    <div className="project-card-wrapper" style={{ position: 'relative', height: '100%' }}>
     <Link href={href} className="project-card-link" style={{ display: 'flex', height: '100%' }}>
       <div
         className="project-card"
@@ -118,6 +120,10 @@ export default function ProjectCard({
         </div>
       </div>
     </Link>
+    <div className="card-delete-btn">
+      <DeleteProjectButton projectId={id} />
+    </div>
+    </div>
   )
 }
 
