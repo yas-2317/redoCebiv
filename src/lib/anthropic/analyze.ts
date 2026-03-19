@@ -1,4 +1,5 @@
 import { anthropic } from './client'
+import { extractJson } from './utils'
 
 export interface ExtractedUsecase {
   name: string
@@ -68,10 +69,7 @@ ${fileContext}`,
   const text = message.content[0].type === 'text' ? message.content[0].text : ''
 
   try {
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) throw new Error('No JSON found')
-    const parsed = JSON.parse(match[0]) as { usecases: ExtractedUsecase[] }
-    return parsed.usecases ?? []
+    return extractJson<{ usecases: ExtractedUsecase[] }>(text).usecases ?? []
   } catch {
     const retry = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -79,15 +77,17 @@ ${fileContext}`,
       messages: [
         {
           role: 'user',
-          content: `Fix the following output to JSON format only. Remove any explanation and return only the JSON object:\n\n${text}`,
+          content: `Fix the following output to JSON format only. Return only the JSON object:\n\n${text}`,
         },
       ],
     })
     const retryText = retry.content[0].type === 'text' ? retry.content[0].text : ''
-    const retryMatch = retryText.match(/\{[\s\S]*\}/)
-    if (!retryMatch) return []
-    const retryParsed = JSON.parse(retryMatch[0]) as { usecases: ExtractedUsecase[] }
-    return retryParsed.usecases ?? []
+    try {
+      return extractJson<{ usecases: ExtractedUsecase[] }>(retryText).usecases ?? []
+    } catch {
+      console.error('extractUsecases: failed to parse response after retry')
+      return []
+    }
   }
 }
 
@@ -145,11 +145,9 @@ ${fileContext}`,
   const text = message.content[0].type === 'text' ? message.content[0].text : ''
 
   try {
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) throw new Error('No JSON found')
-    const parsed = JSON.parse(match[0]) as { challenges: ExtractedChallenge[] }
-    return parsed.challenges ?? []
+    return extractJson<{ challenges: ExtractedChallenge[] }>(text).challenges ?? []
   } catch {
+    console.error('generateChallenges: failed to parse response')
     return []
   }
 }

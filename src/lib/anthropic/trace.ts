@@ -1,4 +1,5 @@
 import { anthropic } from './client'
+import { extractJson } from './utils'
 
 export interface TraceRelatedFile {
   path: string
@@ -78,9 +79,7 @@ Rules:
   const text = message.content[0].type === 'text' ? message.content[0].text : ''
 
   try {
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) throw new Error('No JSON found')
-    return JSON.parse(match[0]) as GeneratedTrace
+    return extractJson<GeneratedTrace>(text)
   } catch {
     const retry = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -93,8 +92,11 @@ Rules:
       ],
     })
     const retryText = retry.content[0].type === 'text' ? retry.content[0].text : ''
-    const retryMatch = retryText.match(/\{[\s\S]*\}/)
-    if (!retryMatch) throw new Error('Failed to parse trace response')
-    return JSON.parse(retryMatch[0]) as GeneratedTrace
+    try {
+      return extractJson<GeneratedTrace>(retryText)
+    } catch {
+      console.error('generateTrace: failed to parse response after retry')
+      throw new Error('Failed to parse trace response')
+    }
   }
 }

@@ -18,18 +18,46 @@ export default function AnalyzingStatus({ projectId }: Props) {
   }, [])
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const res = await fetch(`/api/projects/${projectId}`)
-      if (!res.ok) return
-      const project = await res.json()
+    let failures = 0
+    let polls = 0
+    const MAX_FAILURES = 5
+    const MAX_POLLS = 100 // 5分
 
-      if (project.status === 'ready') {
+    const interval = setInterval(async () => {
+      polls++
+      if (polls >= MAX_POLLS) {
         clearInterval(interval)
-        router.push(`/projects/${projectId}`)
+        setErrorMessage('Analysis is taking too long. Please refresh the page.')
+        return
       }
-      if (project.status === 'error') {
-        clearInterval(interval)
-        setErrorMessage(project.error_message ?? 'Analysis failed')
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}`)
+        if (!res.ok) {
+          failures++
+          if (failures >= MAX_FAILURES) {
+            clearInterval(interval)
+            setErrorMessage('Unable to check analysis status. Please refresh the page.')
+          }
+          return
+        }
+        failures = 0
+        const project = await res.json()
+
+        if (project.status === 'ready') {
+          clearInterval(interval)
+          router.push(`/projects/${projectId}`)
+        }
+        if (project.status === 'error') {
+          clearInterval(interval)
+          setErrorMessage(project.error_message ?? 'Analysis failed')
+        }
+      } catch {
+        failures++
+        if (failures >= MAX_FAILURES) {
+          clearInterval(interval)
+          setErrorMessage('Unable to check analysis status. Please refresh the page.')
+        }
       }
     }, 3000)
 

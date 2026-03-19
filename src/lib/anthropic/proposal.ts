@@ -1,4 +1,5 @@
 import { anthropic } from './client'
+import { extractJson } from './utils'
 
 export interface ProposalCandidate {
   file: string
@@ -73,10 +74,9 @@ candidates: 1–3 locations ordered from most to least recommended`,
   const text = message.content[0].type === 'text' ? message.content[0].text : ''
 
   try {
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) throw new Error('No JSON found')
-    return JSON.parse(match[0]) as GeneratedProposal
+    return extractJson<GeneratedProposal>(text)
   } catch {
+    console.error('generateProposal: failed to parse response')
     return {
       change_type: 'text',
       difficulty: 1,
