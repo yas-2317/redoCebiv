@@ -1,6 +1,6 @@
 import { inngest } from '@/lib/inngest/client'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { extractZip, selectFilesForAnalysis, buildFileContext } from '@/lib/zip'
+import { extractZip, selectFilesForAnalysis, buildFileContext, detectStack } from '@/lib/zip'
 import { extractUsecases, generateChallenges } from '@/lib/anthropic/analyze'
 import { TOKEN_LIMITS } from '@/lib/anthropic/constants'
 
@@ -48,10 +48,11 @@ export const analyzeProject = inngest.createFunction(
 
     // Step 2: ハッシュ保存 + project_files INSERT
     await step.run('save-files', async () => {
-      // zip_hash を保存
+      const stack = detectStack(files)
+      // zip_hash + stack を保存
       await supabase
         .from('projects')
-        .update({ zip_hash: hash, file_count: files.length })
+        .update({ zip_hash: hash, file_count: files.length, stack })
         .eq('id', projectId)
 
       // project_files をバッチINSERT（100件ずつ）

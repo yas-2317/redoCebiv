@@ -143,3 +143,86 @@ export function selectFilesForAnalysis(
 export function buildFileContext(files: ExtractedFile[]): string {
   return files.map(f => `=== ${f.path} ===\n${f.content}`).join('\n\n')
 }
+
+const PACKAGE_JSON_RULES: Array<{ label: string; packages: string[] }> = [
+  // Meta frameworks (React/Vueより先に判定)
+  { label: 'Next.js',     packages: ['next'] },
+  { label: 'Nuxt',        packages: ['nuxt'] },
+  { label: 'SvelteKit',   packages: ['@sveltejs/kit'] },
+  { label: 'Remix',       packages: ['@remix-run/react'] },
+  { label: 'Astro',       packages: ['astro'] },
+  // UI libraries
+  { label: 'React',       packages: ['react'] },
+  { label: 'Vue',         packages: ['vue'] },
+  { label: 'Svelte',      packages: ['svelte'] },
+  { label: 'Angular',     packages: ['@angular/core'] },
+  // Mobile
+  { label: 'React Native', packages: ['react-native'] },
+  // CSS
+  { label: 'Tailwind',    packages: ['tailwindcss'] },
+  // Build
+  { label: 'Vite',        packages: ['vite'] },
+  // Backend
+  { label: 'Express',     packages: ['express'] },
+  { label: 'Hono',        packages: ['hono'] },
+  { label: 'NestJS',      packages: ['@nestjs/core'] },
+  { label: 'Fastify',     packages: ['fastify'] },
+  // ORM / DB
+  { label: 'Prisma',      packages: ['@prisma/client', 'prisma'] },
+  { label: 'Drizzle',     packages: ['drizzle-orm'] },
+  { label: 'Supabase',    packages: ['@supabase/supabase-js'] },
+  // Language
+  { label: 'TypeScript',  packages: ['typescript'] },
+]
+
+// React がすでに検出されている場合に除外するメタフレームワーク依存ラベル
+const REACT_IMPLIES: Set<string> = new Set(['Next.js', 'Remix', 'React Native'])
+
+export function detectStack(files: ExtractedFile[]): string[] {
+  const rootFiles = new Map<string, string>()
+  for (const f of files) {
+    const depth = f.path.split('/').length
+    // ルート直下 or ZIPが単一ディレクトリにまとまっている場合（depth<=2）
+    if (depth <= 2) rootFiles.set(f.path.split('/').pop()!, f.content)
+  }
+
+  const detected = new Set<string>()
+
+  // package.json からの判定
+  const pkgRaw = rootFiles.get('package.json')
+  if (pkgRaw) {
+    try {
+      const pkg = JSON.parse(pkgRaw) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> }
+      const allDeps = { ...pkg.dependencies, ...pkg.devDependencies }
+      for (const { label, packages } of PACKAGE_JSON_RULES) {
+        if (packages.some(p => p in allDeps)) detected.add(label)
+      }
+    } catch { /* parse失敗は無視 */ }
+  }
+
+  // React はメタフレームワークに内包される場合は除外
+  if ([...REACT_IMPLIES].some(fw => detected.has(fw))) detected.delete('React')
+  // Svelte は SvelteKit に内包される場合は除外
+  if (detected.has('SvelteKit')) detected.delete('Svelte')
+
+  // tsconfig.json の存在で TypeScript を補完
+  if (!detected.has('TypeScript') && rootFiles.has('tsconfig.json')) {
+    detected.add('TypeScript')
+  }
+
+  // ファイルパターンでの判定（他言語）
+  const hasSwift   = files.some(f => f.path.endsWith('.swift') || f.path.endsWith('Package.swift'))
+  const hasFlutter = rootFiles.has('pubspec.yaml')
+  const hasPython  = rootFiles.has('requirements.txt') || rootFiles.has('pyproject.toml')
+  const hasRails   = (() => {
+    const gemfile = rootFiles.get('Gemfile')
+    return gemfile ? /gem ['"]rails['"]/.test(gemfile) : false
+  })()
+
+  if (hasSwift)   detected.add('Swift')
+  if (hasFlutter) detected.add('Flutter')
+  if (hasPython)  detected.add('Python')
+  if (hasRails)   detected.add('Ruby on Rails')
+
+  return [...detected]
+}
