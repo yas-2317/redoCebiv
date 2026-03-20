@@ -64,7 +64,7 @@ export default function ProjectUploadForm() {
       const messages: Record<string, string> = {
         FILE_TOO_LARGE: 'File exceeds 20MB limit',
         INVALID_FILE: 'Please select a ZIP file',
-        INSUFFICIENT_CREDITS: 'Insufficient credits',
+        INSUFFICIENT_CREDITS: 'Not enough charts to navigate.',
         UPLOAD_FAILED: 'Upload failed. Please try again',
       }
       setError(messages[json.error] ?? 'An error occurred')
@@ -116,7 +116,7 @@ export default function ProjectUploadForm() {
         <p className="mt-1 font-mono text-xs text-amber-700">
           zip -r app.zip . --exclude &apos;node_modules/*&apos; &apos;.git/*&apos; &apos;.next/*&apos;
         </p>
-        <p className="mt-1 text-xs">Supported: Next.js / React / TypeScript / Tailwind　Max: 20MB</p>
+        <p className="mt-1 text-xs">Supported: Web / Mobile / Backend apps (Next.js, Vue, Flutter, Swift, Rails and more)　Max: 20MB</p>
       </div>
 
       {/* プロジェクト名 */}
@@ -134,7 +134,7 @@ export default function ProjectUploadForm() {
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       <Button type="submit" disabled={!file || loading} className="w-full">
-        {loading ? 'Starting analysis...' : 'Start analysis (−5 credits)'}
+        {loading ? 'Starting analysis...' : 'Start analysis (−5 charts)'}
       </Button>
     </form>
   )

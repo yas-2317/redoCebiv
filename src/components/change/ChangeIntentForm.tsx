@@ -45,7 +45,7 @@ export function ChangeIntentForm({ projectId }: ChangeIntentFormProps) {
       })
 
       if (res.status === 402) {
-        setError('Insufficient credits.')
+        setError('Not enough charts to navigate.')
         return
       }
       if (!res.ok) {
@@ -77,7 +77,7 @@ export function ChangeIntentForm({ projectId }: ChangeIntentFormProps) {
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-400">−{CREDIT_COSTS.proposal} credit</p>
+            <p className="text-xs text-gray-400">−{CREDIT_COSTS.proposal} charts</p>
             <button
               type="submit"
               disabled={!intent.trim() || loading}

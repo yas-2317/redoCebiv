@@ -36,8 +36,8 @@ export default async function HomePage() {
       .limit(60),
     supabase
       .from('traces')
-      .select('id, created_at, usecase_id, usecases(name, project_id, projects(name, id))')
-      .order('created_at', { ascending: false })
+      .select('id, generated_at, usecase_id, usecases(name, project_id, projects(name, id))')
+      .order('generated_at', { ascending: false })
       .limit(60),
   ])
 
@@ -73,7 +73,7 @@ export default async function HomePage() {
   })
   const chartData = chartDays.map(day => {
     const next = new Date(day); next.setDate(next.getDate() + 1)
-    const t = (traces ?? []).filter(x => { const d = new Date(x.created_at); return d >= day && d < next }).length
+    const t = (traces ?? []).filter(x => { const d = new Date(x.generated_at); return d >= day && d < next }).length
     const c = (submissions ?? []).filter(x => { const d = new Date(x.created_at); return d >= day && d < next }).length
     return { day, traces: t, challenges: c, total: t + c }
   })
@@ -86,13 +86,13 @@ export default async function HomePage() {
   const lastWeekTotal = (() => {
     const start = new Date(now.getTime() - 14 * msDay)
     const end   = new Date(now.getTime() -  7 * msDay)
-    const t = (traces ?? []).filter(x => { const d = new Date(x.created_at); return d >= start && d < end }).length
+    const t = (traces ?? []).filter(x => { const d = new Date(x.generated_at); return d >= start && d < end }).length
     const c = (submissions ?? []).filter(x => { const d = new Date(x.created_at); return d >= start && d < end }).length
     return t + c
   })()
   const monthlyTotal = (() => {
     const start = new Date(now.getTime() - 30 * msDay)
-    const t = (traces ?? []).filter(x => new Date(x.created_at) >= start).length
+    const t = (traces ?? []).filter(x => new Date(x.generated_at) >= start).length
     const c = (submissions ?? []).filter(x => new Date(x.created_at) >= start).length
     return t + c
   })()
@@ -112,7 +112,7 @@ export default async function HomePage() {
       icon: '🔍',
       label: (t.usecases as unknown as { name: string } | null)?.name ?? 'Trace',
       projectName: ((t.usecases as unknown as { projects: { name: string; id: string } | null } | null)?.projects)?.name ?? '',
-      createdAt: t.created_at,
+      createdAt: t.generated_at,
     })),
   ]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -151,7 +151,7 @@ export default async function HomePage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'stretch' }}>
 
         {/* Stats 2×3 grid */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: '100%' }}>
             {[
               { Icon: FolderOpen, label: 'Projects',   value: totalProjects,   i: 0 },
@@ -193,7 +193,7 @@ export default async function HomePage() {
                 </div>
                 <span style={{ fontSize: '18px', fontWeight: 700, color: '#1d6187', lineHeight: 1 }}>
                   {creditBalance}
-                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#9ca3af', marginLeft: '3px' }}>/ {planMax} cr</span>
+                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#9ca3af', marginLeft: '3px' }}>/ {planMax} charts</span>
                 </span>
               </div>
               <div style={{ height: '5px', background: '#97bbd0', borderRadius: '99px', overflow: 'hidden' }}>
@@ -208,7 +208,7 @@ export default async function HomePage() {
         </div>
 
         {/* Activity chart */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '14px' }}>Activity</p>
 
           {/* Stats row */}
@@ -256,7 +256,7 @@ export default async function HomePage() {
         </div>
 
         {/* What you've got back */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
           <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '14px' }}>
             What you&apos;ve got back
           </p>
@@ -300,85 +300,86 @@ export default async function HomePage() {
 
       </div>
 
-      {/* 下段: プロジェクト(60%) + アクティビティ(40%) */}
-      <div className="dashboard-main-grid">
+      {/* 下段: 1枚パネル（Your projects | Recent activity） */}
+      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+        <div className="dashboard-main-grid" style={{ gap: 0 }}>
 
-        {/* プロジェクト 3カラムグリッド */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>Your projects</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {projects.length > 3 && (
-                <Link href="/projects" style={{ fontSize: '12px', color: '#1d6187', textDecoration: 'none', fontWeight: 500 }}>
-                  All projects ({projects.length}) →
+          {/* Your projects */}
+          <div>
+            <div className="card-header">
+              <span className="card-header-title">Your projects</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {projects.length > 3 && (
+                  <Link href="/projects" className="card-header-action">
+                    All projects ({projects.length}) →
+                  </Link>
+                )}
+                <Link href="/projects/new" className="card-header-action">
+                  + New
                 </Link>
-              )}
-              <Link
-                href="/projects/new"
-                style={{
-                  padding: '5px 12px', borderRadius: '7px',
-                  background: '#1d6187', color: 'white',
-                  fontSize: '12px', fontWeight: 500, textDecoration: 'none',
-                }}
-              >
-                + New
-              </Link>
+              </div>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', alignItems: 'stretch' }}>
+                {recentProjectsWithProgress.map(p => (
+                  <ProjectCard
+                    key={p.id}
+                    id={p.id}
+                    name={p.name}
+                    status={p.status}
+                    stack={p.stack ?? []}
+                    fileCount={p.file_count}
+                    createdAt={p.created_at}
+                    traceCount={p.traceCount}
+                    usecaseCount={p.usecaseCount}
+                    solvedCount={p.solvedCount}
+                    challengeCount={p.challengeCount}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', alignItems: 'stretch' }}>
-            {recentProjectsWithProgress.map(p => (
-              <ProjectCard
-                key={p.id}
-                id={p.id}
-                name={p.name}
-                status={p.status}
-                stack={p.stack ?? []}
-                fileCount={p.file_count}
-                createdAt={p.created_at}
-                traceCount={p.traceCount}
-                usecaseCount={p.usecaseCount}
-                solvedCount={p.solvedCount}
-                challengeCount={p.challengeCount}
-              />
-            ))}
-          </div>
-        </div>
 
-        {/* Recent activity */}
-        <div style={{ position: 'sticky', top: '80px' }}>
-          <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '14px' }}>Recent activity</h2>
-          {activities.length === 0 ? (
-            <p style={{ fontSize: '13px', color: '#9ca3af' }}>No activity yet.</p>
-          ) : (
-            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-              {activities.map((a, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 16px',
-                    borderTop: i > 0 ? '1px solid #f9fafb' : undefined,
-                    gap: '12px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                    <span style={{ fontSize: '16px', lineHeight: 1, flexShrink: 0 }}>{a.icon}</span>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: '13px', color: '#1f2937', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.label}</p>
-                      {a.projectName && (
-                        <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>{a.projectName}</p>
-                      )}
+          {/* Recent activity */}
+          <div style={{ borderLeft: '1px solid #e5e7eb' }}>
+            <div className="card-header">
+              <span className="card-header-title">Recent activity</span>
+            </div>
+            <div style={{ padding: '20px' }}>
+              {activities.length === 0 ? (
+                <p style={{ fontSize: '13px', color: '#9ca3af' }}>No activity yet.</p>
+              ) : (
+                <div>
+                  {activities.map((a, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '10px 0',
+                        borderTop: i > 0 ? '1px solid #f3f4f6' : undefined,
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <span style={{ fontSize: '16px', lineHeight: 1, flexShrink: 0 }}>{a.icon}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: '13px', color: '#1f2937', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.label}</p>
+                          {a.projectName && (
+                            <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{a.projectName}</p>
+                          )}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#9ca3af', flexShrink: 0 }}>
+                        {formatRelative(a.createdAt)}
+                      </span>
                     </div>
-                  </div>
-                  <span style={{ fontSize: '11px', color: '#9ca3af', flexShrink: 0 }}>
-                    {formatRelative(a.createdAt)}
-                  </span>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
+          </div>
 
+        </div>
       </div>
     </div>
   )

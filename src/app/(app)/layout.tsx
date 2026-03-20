@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single()
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f3f8fb' }}>
+    <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
       <header style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white', borderBottom: '1px solid #e5e7eb', padding: '0 24px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <Link href="/" style={{ opacity: 1, transition: 'opacity 0.15s' }}>
@@ -27,7 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <img src="/wordmark.png" alt="redoCebiv" style={{ height: '28px', width: 'auto' }} />
           </Link>
           <span style={{ fontSize: '12px', color: '#9ca3af', borderLeft: '1px solid #e5e7eb', paddingLeft: '16px', letterSpacing: '0.01em' }}>
-            Trace it. Take it back.
+            Trace back. Take back the helm.
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

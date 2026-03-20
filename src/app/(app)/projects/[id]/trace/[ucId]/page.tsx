@@ -61,7 +61,7 @@ export default async function TracePage({ params }: PageProps) {
   if (!ok) {
     return (
       <div style={{ maxWidth: '720px', paddingTop: '48px', textAlign: 'center' }}>
-        <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>Insufficient credits.</p>
+        <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>Not enough charts to navigate.</p>
         <Link href={`/projects/${projectId}`} style={{ fontSize: '13px', color: '#1d6187', textDecoration: 'none' }}>
           ← Back to project
         </Link>
@@ -133,7 +133,7 @@ function TracePage_UI({
   }
 }) {
   return (
-    <div style={{ maxWidth: '720px' }}>
+    <div>
       <nav style={{ fontSize: '13px', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '24px' }}>
         <Link href="/projects" style={{ color: '#6b7280', textDecoration: 'none' }}>Projects</Link>
         <span>/</span>

@@ -72,7 +72,7 @@ export default function SignupPage() {
           <img src="/wordmark.png" alt="redoCebiv" style={{ height: '32px', width: 'auto' }} />
         </div>
         <CardTitle className="text-xl">Create account</CardTitle>
-        <CardDescription>Free to start — 15 credits included</CardDescription>
+        <CardDescription>Free to start — 15 charts included</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button
