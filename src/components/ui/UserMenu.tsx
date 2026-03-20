@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function UserMenu({ displayName }: { displayName: string }) {
@@ -47,9 +48,18 @@ export default function UserMenu({ displayName }: { displayName: string }) {
             zIndex: 50,
           }}
         >
+          <Link
+            href="/settings"
+            onClick={() => setOpen(false)}
+            className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors"
+            style={{ textDecoration: 'none' }}
+          >
+            Settings
+          </Link>
+          <div style={{ height: '1px', background: '#f3f4f6' }} />
           <button
             onClick={handleSignOut}
-            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg transition-colors"
           >
             Sign out
           </button>

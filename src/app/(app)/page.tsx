@@ -1,9 +1,8 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { FolderOpen, Layers, Search, Zap, Trophy } from 'lucide-react'
+import { FolderOpen, Layers, Search, Map, Trophy } from 'lucide-react'
 import ProjectCard from '@/components/project/ProjectCard'
 import { enrichProjectsWithProgress } from './projects/page'
-import { getPlanInfo } from '@/lib/billing/config'
 
 const GRADE_ICON: Record<string, string> = {
   self: '✅',
@@ -16,12 +15,11 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   const [
-    { data: profile },
     { data: allProjects },
     { data: submissions },
     { data: traces },
+    { data: transactions },
   ] = await Promise.all([
-    supabase.from('profiles').select('credit_balance, plan').eq('id', user!.id).single(),
     supabase
       .from('projects')
       .select('id, name, status, stack, file_count, created_at')
@@ -39,6 +37,11 @@ export default async function HomePage() {
       .select('id, generated_at, usecase_id, usecases(name, project_id, projects(name, id))')
       .order('generated_at', { ascending: false })
       .limit(60),
+    supabase
+      .from('credit_transactions')
+      .select('amount')
+      .eq('user_id', user!.id)
+      .lt('amount', 0),
   ])
 
   const projects = allProjects ?? []
@@ -51,11 +54,7 @@ export default async function HomePage() {
   const totalTraces = allWithProgress.reduce((s, p) => s + (p.traceCount ?? 0), 0)
   const totalProjects = readyProjects.length
   const totalChallenges = submissions?.length ?? 0
-  const creditBalance = profile?.credit_balance ?? 0
-  const planInfo = getPlanInfo(profile?.plan ?? 'wanderer')
-  const planMax = planInfo.displayMax
-  const planLabel = planInfo.label
-  const creditPct = Math.max(0, Math.min(100, Math.round((creditBalance / planMax) * 100)))
+  const chartsLogged = (transactions ?? []).reduce((s, t) => s + Math.abs(t.amount), 0)
 
   // Grade counts
   const gradeCount = { self: 0, with_hint: 0, missed: 0 }
@@ -145,14 +144,17 @@ export default async function HomePage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', alignItems: 'stretch' }}>
 
       {/* 上段 3列: Activity | What you've got back | Your footprint */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', alignItems: 'stretch' }}>
+      <>
 
         {/* Activity chart */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '14px' }}>Activity</p>
+        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+          <div className="card-header">
+            <span className="card-header-title">Activity</span>
+          </div>
+          <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
 
           {/* Stats row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
@@ -196,13 +198,15 @@ export default async function HomePage() {
             </div>
             <ActivityChart data={chartData} max={chartMax} />
           </div>
+          </div>
         </div>
 
         {/* What you've got back */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '14px' }}>
-            What you&apos;ve got back
-          </p>
+        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+          <div className="card-header">
+            <span className="card-header-title">What you&apos;ve got back</span>
+          </div>
+          <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', flex: 1 }}>
           {totalChallenges === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '16px 0' }}>
               <p style={{ fontSize: '24px', marginBottom: '8px' }}>🎯</p>
@@ -239,75 +243,71 @@ export default async function HomePage() {
               </div>
             </>
           )}
+          </div>
         </div>
 
         {/* Your footprint */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
+        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
           <div className="card-header">
             <span className="card-header-title">Your footprint</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-            {[
-              { Icon: FolderOpen, label: 'Projects',   value: totalProjects,   i: 0 },
-              { Icon: Layers,     label: 'Features',   value: totalFeatures,   i: 1 },
-              { Icon: Search,     label: 'Traces',     value: totalTraces,     i: 2 },
-              { Icon: Trophy,     label: 'Challenges', value: totalChallenges, i: 3 },
-            ].map(({ Icon, label, value, i }) => (
-              <div
-                key={label}
-                style={{
-                  padding: '16px 18px',
-                  borderTop: i >= 2 ? '1px solid #f3f4f6' : undefined,
-                  borderLeft: i % 2 === 1 ? '1px solid #f3f4f6' : undefined,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
-                  <Icon size={13} color="#9ca3af" />
-                  <span style={{ fontSize: '13px', color: '#374151' }}>{label}</span>
-                </div>
-                <p style={{ fontSize: '26px', fontWeight: 700, color: '#111827', lineHeight: 1, textAlign: 'right' }}>
-                  {value}
-                </p>
-              </div>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
-            {/* Credits — フル幅、バー + plan */}
-            <div style={{ gridColumn: '1 / -1', padding: '14px 18px', borderTop: '1px solid #f3f4f6', background: '#fafafa' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Zap size={13} color="#1d6187" />
-                  <span style={{ fontSize: '13px', color: '#374151' }}>Credits left</span>
-                  <span style={{
-                    fontSize: '10px', fontWeight: 600, color: '#1d6187',
-                    background: '#e2eef5', border: '1px solid #97bbd0',
-                    borderRadius: '4px', padding: '1px 5px', marginLeft: '4px',
-                  }}>
-                    {planLabel}
-                  </span>
-                </div>
-                <span style={{ fontSize: '18px', fontWeight: 700, color: '#1d6187', lineHeight: 1 }}>
-                  {creditBalance}
-                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#9ca3af', marginLeft: '3px' }}>/ {planMax} charts</span>
-                </span>
+            {/* Projects (link) */}
+            <Link href="/projects" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #f3f4f6', transition: 'background 0.1s' }} className="footprint-row">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FolderOpen size={13} color="#9ca3af" />
+                <span style={{ fontSize: '13px', color: '#374151' }}>Projects</span>
               </div>
-              <div style={{ height: '5px', background: '#97bbd0', borderRadius: '99px', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', width: `${creditPct}%`,
-                  background: creditBalance < planMax * 0.2 ? '#ef4444' : '#1d6187',
-                  borderRadius: '99px',
-                }} />
+              <span style={{ fontSize: '22px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>{totalProjects}</span>
+            </Link>
+
+            {/* Features (sub-item, no link) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px 10px 32px', borderBottom: '1px solid #f9fafb', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: '26px', top: 0, bottom: 0, width: '1px', background: '#e5e7eb' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Layers size={12} color="#d1d5db" />
+                <span style={{ fontSize: '12px', color: '#9ca3af' }}>Features</span>
               </div>
+              <span style={{ fontSize: '18px', fontWeight: 600, color: '#6b7280', lineHeight: 1 }}>{totalFeatures}</span>
             </div>
+
+            {/* Traces (sub-item, no link) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px 10px 32px', borderBottom: '1px solid #f3f4f6', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: '26px', top: 0, bottom: '50%', width: '1px', background: '#e5e7eb' }} />
+              <div style={{ position: 'absolute', left: '26px', top: '50%', width: '8px', height: '1px', background: '#e5e7eb' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Search size={12} color="#d1d5db" />
+                <span style={{ fontSize: '12px', color: '#9ca3af' }}>Traces</span>
+              </div>
+              <span style={{ fontSize: '18px', fontWeight: 600, color: '#6b7280', lineHeight: 1 }}>{totalTraces}</span>
+            </div>
+
+            {/* Challenges (link) */}
+            <Link href="/progress" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #f3f4f6', transition: 'background 0.1s' }} className="footprint-row">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Trophy size={13} color="#9ca3af" />
+                <span style={{ fontSize: '13px', color: '#374151' }}>Challenges</span>
+              </div>
+              <span style={{ fontSize: '22px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>{totalChallenges}</span>
+            </Link>
+
+            {/* Charts logged (link to /credits) */}
+            <Link href="/credits" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: '#fafafa', marginTop: 'auto', transition: 'background 0.1s' }} className="footprint-row">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Map size={13} color="#9ca3af" />
+                <span style={{ fontSize: '13px', color: '#374151' }}>Charts logged</span>
+              </div>
+              <span style={{ fontSize: '22px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>{chartsLogged}</span>
+            </Link>
+
           </div>
         </div>
 
-      </div>
+      </>
 
-      {/* 下段: 2列グリッド（Your projects | Recent activity） */}
-      <div className="dashboard-main-grid">
-
-        {/* Your projects */}
-        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+      {/* Your projects */}
+      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden', gridColumn: 'span 2' }}>
           <div className="card-header">
             <span className="card-header-title">Your projects</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -381,7 +381,6 @@ export default async function HomePage() {
           </div>
         </div>
 
-      </div>
     </div>
   )
 }

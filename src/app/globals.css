@@ -213,6 +213,11 @@
   padding: 20px;
 }
 
+/* Footprint row hover */
+.footprint-row:hover {
+  background: #f9fafb;
+}
+
 /* Dashboard main layout — responsive */
 .dashboard-main-grid {
   display: grid;
