@@ -39,7 +39,7 @@ export default async function StackPage({ params }: { params: Promise<{ slug: st
       {/* Best for */}
       <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '20px 24px' }}>
         <p style={{ fontSize: '12px', fontWeight: 600, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
-          こんな時に向いている
+          Best for
         </p>
         <p style={{ fontSize: '15px', color: '#166534', lineHeight: '1.7' }}>{entry.bestFor}</p>
       </div>
@@ -48,7 +48,7 @@ export default async function StackPage({ params }: { params: Promise<{ slug: st
       {entry.alternatives.length > 0 && (
         <div>
           <p style={{ fontSize: '13px', fontWeight: 600, color: '#6b7280', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '16px' }}>
-            同じ役割の他のスタック
+            Alternatives
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {entry.alternatives.map(alt => (
@@ -63,7 +63,7 @@ export default async function StackPage({ params }: { params: Promise<{ slug: st
                   >
                     {alt.label}
                   </Link>
-                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>との違い</span>
+                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>vs</span>
                 </div>
                 <p style={{ fontSize: '14px', color: '#4b5563', lineHeight: '1.6' }}>{alt.vs}</p>
               </div>

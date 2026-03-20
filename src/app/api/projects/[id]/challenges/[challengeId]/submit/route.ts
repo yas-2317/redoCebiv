@@ -6,6 +6,7 @@ interface SubmitBody {
   selectedFiles: string[]
   answerText: string
   usedHint: boolean
+  selectedIndex?: number
 }
 
 interface ChallengeAnswer {
@@ -14,6 +15,8 @@ interface ChallengeAnswer {
   explanation: string
   change_type: string
   related_examples: string[]
+  choices?: string[]
+  correct_index?: number
 }
 
 export async function POST(
@@ -39,7 +42,7 @@ export async function POST(
   // Load challenge with answer
   const { data: challenge } = await supabase
     .from('challenges')
-    .select('id, title, answer, difficulty')
+    .select('id, title, answer, difficulty, format')
     .eq('id', challengeId)
     .eq('project_id', projectId)
     .single()
@@ -47,14 +50,19 @@ export async function POST(
   if (!challenge) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body: SubmitBody = await req.json()
-  const { selectedFiles, answerText, usedHint } = body
+  const { selectedFiles, answerText, usedHint, selectedIndex } = body
   const answer = challenge.answer as ChallengeAnswer
+  const format = (challenge.format ?? 'file_selection') as string
 
-  // Rule-based grade: all correct_files must be selected
-  const fileMatch = answer.correct_files.every(f => selectedFiles.includes(f))
-  const grade: 'self' | 'with_hint' | 'missed' = fileMatch
-    ? usedHint ? 'with_hint' : 'self'
-    : 'missed'
+  // Rule-based grade
+  let grade: 'self' | 'with_hint' | 'missed'
+  if (format === 'code_choice') {
+    const correct = selectedIndex !== undefined && selectedIndex === answer.correct_index
+    grade = correct ? (usedHint ? 'with_hint' : 'self') : 'missed'
+  } else {
+    const fileMatch = answer.correct_files.every(f => selectedFiles.includes(f))
+    grade = fileMatch ? (usedHint ? 'with_hint' : 'self') : 'missed'
+  }
 
   // Check for existing submission → reuse explanation only if grade matches
   const { data: existing } = await supabase
@@ -92,6 +100,7 @@ export async function POST(
     used_hint: usedHint,
     grade,
     explanation,
+    selected_index: selectedIndex ?? null,
   })
 
   return NextResponse.json({

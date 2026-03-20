@@ -25,7 +25,7 @@ export default async function ChallengePage({ params }: PageProps) {
 
   const { data: challenge } = await supabase
     .from('challenges')
-    .select('id, title, description, type, difficulty, hint')
+    .select('id, title, description, type, difficulty, format, hint, answer')
     .eq('id', challengeId)
     .eq('project_id', projectId)
     .single()

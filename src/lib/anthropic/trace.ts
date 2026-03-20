@@ -13,6 +13,7 @@ export interface TraceFlowStep {
   description: string
   file: string
   line: number
+  snippet: string
 }
 
 export interface GeneratedTrace {
@@ -32,7 +33,7 @@ export async function generateTrace(
 ): Promise<GeneratedTrace> {
   const message = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
+    max_tokens: 2048,
     system: [
       {
         type: 'text',
@@ -57,10 +58,21 @@ ${usecase.description ? `Description: ${usecase.description}` : ''}
 Output JSON only, no explanation or \`\`\` wrapper:
 {
   "related_files": [
-    {"path": "components/AddTaskForm.tsx", "role": "Form UI and input state", "keyLines": [18, 24]}
+    {
+      "path": "components/AddTaskForm.tsx",
+      "role": "Form UI and input state",
+      "keyLines": [18, 24]
+    }
   ],
   "flow": [
-    {"step": 1, "label": "Input", "description": "User types into the input field", "file": "components/AddTaskForm.tsx", "line": 18}
+    {
+      "step": 1,
+      "label": "Input",
+      "description": "User types into the input field",
+      "file": "components/AddTaskForm.tsx",
+      "line": 18,
+      "snippet": "const [text, setText] = useState('')"
+    }
   ],
   "explanation": "You wanted users to add tasks, so the AI built a form that captures input and appends it to the list on submit."
 }
@@ -69,6 +81,7 @@ Rules:
 - related_files: 2–5 files directly involved in this feature only
 - keyLines: the 1–3 most important line numbers to understand the feature
 - flow: 3–6 steps tracing the user action from UI to state or data
+- flow[].snippet: extract the 3–8 most relevant lines for that step as a code string (use \\n for newlines)
 - explanation: 2 sentences max, start with "You wanted..." in plain language`,
           },
         ],
@@ -83,7 +96,7 @@ Rules:
   } catch {
     const retry = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [
         {
           role: 'user',

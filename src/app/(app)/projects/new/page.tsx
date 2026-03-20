@@ -8,7 +8,7 @@ export default function NewProjectPage() {
         <CardHeader>
           <CardTitle>Add project</CardTitle>
           <CardDescription>
-            Upload a ZIP of your Next.js / React app to analyze it with AI
+            Upload a ZIP of your app to analyze it with AI
           </CardDescription>
         </CardHeader>
         <CardContent>

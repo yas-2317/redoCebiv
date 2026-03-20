@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { FileTree } from './FileTree'
 import { GradeResult } from './GradeResult'
+import { ChoiceSelector } from './ChoiceSelector'
+
+interface ChallengeAnswer {
+  choices?: string[]
+  correct_index?: number
+  current_code?: string
+}
 
 interface Challenge {
   id: string
@@ -10,7 +17,9 @@ interface Challenge {
   description: string
   type: string
   difficulty: number
+  format: 'file_selection' | 'code_choice'
   hint: string | null
+  answer: ChallengeAnswer
 }
 
 interface PreviousSubmission {
@@ -38,9 +47,11 @@ interface Props {
 }
 
 const DIFFICULTY_STARS: Record<number, string> = {
-  1: '★☆☆',
-  2: '★★☆',
-  3: '★★★',
+  1: '★☆☆☆☆',
+  2: '★★☆☆☆',
+  3: '★★★☆☆',
+  4: '★★★★☆',
+  5: '★★★★★',
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -51,7 +62,9 @@ const TYPE_LABEL: Record<string, string> = {
 }
 
 export function ChallengeView({ projectId, challenge, filePaths, previousSubmission }: Props) {
+  const isCodeChoice = challenge.format === 'code_choice'
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [answerText, setAnswerText] = useState('')
   const [hintVisible, setHintVisible] = useState(false)
   const [usedHint, setUsedHint] = useState(false)
@@ -75,7 +88,7 @@ export function ChallengeView({ projectId, challenge, filePaths, previousSubmiss
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ selectedFiles, answerText, usedHint }),
+          body: JSON.stringify({ selectedFiles, answerText, usedHint, selectedIndex }),
         }
       )
 
@@ -97,6 +110,7 @@ export function ChallengeView({ projectId, challenge, filePaths, previousSubmiss
   const handleRetry = () => {
     setResult(null)
     setSelectedFiles([])
+    setSelectedIndex(null)
     setAnswerText('')
     setHintVisible(false)
     setUsedHint(false)
@@ -165,43 +179,66 @@ export function ChallengeView({ projectId, challenge, filePaths, previousSubmiss
         </div>
       )}
 
-      {/* File tree */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
-          Which file(s) would you change?
-          {selectedFiles.length > 0 && (
-            <span className="ml-2 font-normal text-gray-400">
-              ({selectedFiles.length} selected)
-            </span>
+      {isCodeChoice ? (
+        /* Code choice UI */
+        <div className="space-y-3">
+          {challenge.answer.current_code && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-widest text-gray-400">Current code</p>
+              <pre className="overflow-x-auto rounded-lg bg-gray-950 px-4 py-3 text-xs leading-relaxed text-gray-100">
+                <code>{challenge.answer.current_code}</code>
+              </pre>
+            </div>
           )}
-        </label>
-        <FileTree
-          paths={filePaths}
-          selected={selectedFiles}
-          onChange={setSelectedFiles}
-        />
-      </div>
-
-      {/* Answer text */}
-      <div className="space-y-2">
-        <label htmlFor="answer" className="block text-sm font-medium text-gray-700">
-          What change would you make? <span className="font-normal text-gray-400">(optional)</span>
-        </label>
-        <textarea
-          id="answer"
-          value={answerText}
-          onChange={e => setAnswerText(e.target.value)}
-          placeholder="e.g. Add disabled={text.trim() === ''} to the button"
-          rows={3}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
-        />
-      </div>
+          <label className="block text-sm font-medium text-gray-700">
+            {challenge.difficulty === 4 ? 'Which code is the problem?' : 'Choose the correct fix:'}
+          </label>
+          <ChoiceSelector
+            choices={challenge.answer.choices ?? []}
+            selectedIndex={selectedIndex}
+            onSelect={setSelectedIndex}
+            disabled={submitting}
+          />
+        </div>
+      ) : (
+        /* File selection UI */
+        <>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Which file(s) would you change?
+              {selectedFiles.length > 0 && (
+                <span className="ml-2 font-normal text-gray-400">
+                  ({selectedFiles.length} selected)
+                </span>
+              )}
+            </label>
+            <FileTree
+              paths={filePaths}
+              selected={selectedFiles}
+              onChange={setSelectedFiles}
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="answer" className="block text-sm font-medium text-gray-700">
+              What change would you make? <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <textarea
+              id="answer"
+              value={answerText}
+              onChange={e => setAnswerText(e.target.value)}
+              placeholder="e.g. Add disabled={text.trim() === ''} to the button"
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+          </div>
+        </>
+      )}
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       <button
         type="submit"
-        disabled={submitting || selectedFiles.length === 0}
+        disabled={submitting || (isCodeChoice ? selectedIndex === null : selectedFiles.length === 0)}
         className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {submitting ? 'Checking…' : 'Submit answer'}

@@ -2,19 +2,9 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { StackBadge } from '@/components/stack/StackBadge'
+import { FeatureList } from '@/components/project/FeatureList'
 
 const DIFFICULTY_STARS: Record<number, string> = { 1: '★☆☆', 2: '★★☆', 3: '★★★' }
-
-const CATEGORY_LABEL: Record<string, string> = {
-  auth: 'Authentication',
-  content: 'Content',
-  navigation: 'Navigation',
-  settings: 'Settings',
-  social: 'Social',
-  other: 'Other',
-}
-
-const CATEGORY_ORDER = ['auth', 'content', 'navigation', 'settings', 'social', 'other']
 
 const GRADE_ICON: Record<string, string> = {
   self: '✅',
@@ -43,7 +33,7 @@ export default async function ProjectPage({
     await Promise.all([
       supabase
         .from('usecases')
-        .select('id, name, description, related_file_paths, display_order, category')
+        .select('id, name, description, related_file_paths, display_order, category, relevant_stacks')
         .eq('project_id', id)
         .order('display_order'),
       supabase
@@ -72,14 +62,6 @@ export default async function ProjectPage({
       submissionByChallenge[s.challenge_id] = s.grade
     }
   }
-
-  const byCategory: Record<string, typeof usecases> = {}
-  for (const uc of usecases ?? []) {
-    const cat = uc.category ?? 'other'
-    byCategory[cat] = byCategory[cat] ?? []
-    byCategory[cat].push(uc)
-  }
-  const activeCategories = CATEGORY_ORDER.filter(c => (byCategory[c]?.length ?? 0) > 0)
 
   const totalUsecases = usecases?.length ?? 0
   const tracedCount = (usecases ?? []).filter(uc => tracedIds.has(uc.id)).length
@@ -130,7 +112,10 @@ export default async function ProjectPage({
       </div>
 
       {/* Stats row */}
-      <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+      <div className="card">
+        <div className="card-header">
+          <span className="card-header-title">Progress</span>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
           {[
             { label: 'Features traced', value: tracedCount, total: totalUsecases, pct: tracePct, color: '#1d6187' },
@@ -153,144 +138,84 @@ export default async function ProjectPage({
       <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', alignItems: 'start' }}>
 
         {/* Features */}
-        <section style={{ minWidth: 0 }}>
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '12px' }}>
-            Features
-            <span style={{ fontSize: '12px', fontWeight: 400, color: '#9ca3af', marginLeft: '8px' }}>
-              {tracedCount} / {totalUsecases} traced
-            </span>
-          </p>
-
-          {totalUsecases === 0 ? (
-            <p style={{ fontSize: '13px', color: '#9ca3af' }}>No features found.</p>
-          ) : (
-            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-              {activeCategories.map((cat, catIndex) => (
-                <div key={cat}>
-                  {catIndex > 0 && <div style={{ borderTop: '1px solid #f3f4f6' }} />}
-                  <div style={{ padding: '8px 16px', background: '#f9fafb' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#9ca3af' }}>
-                      {CATEGORY_LABEL[cat] ?? cat}
-                    </span>
-                  </div>
-                  {[...(byCategory[cat] ?? [])].sort((a, b) => (tracedIds.has(a.id) ? 1 : 0) - (tracedIds.has(b.id) ? 1 : 0)).map((uc, ucIndex) => {
-                    const isTraced = tracedIds.has(uc.id)
-                    return (
-                      <div
-                        key={uc.id}
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '12px 16px',
-                          borderTop: ucIndex > 0 ? '1px solid #f9fafb' : undefined,
-                          background: isTraced ? '#f0fdf4' : 'white',
-                          transition: 'background 0.1s',
-                          gap: '12px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                          <span style={{ fontSize: '13px', color: isTraced ? '#16a34a' : '#d1d5db', flexShrink: 0, lineHeight: 1 }}>
-                            {isTraced ? '●' : '○'}
-                          </span>
-                          <div style={{ minWidth: 0 }}>
-                            <p style={{ fontSize: '13px', fontWeight: 500, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {uc.name}
-                            </p>
-                            {uc.description && (
-                              <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {uc.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Link
-                          href={`/projects/${id}/trace/${uc.id}`}
-                          style={{
-                            flexShrink: 0,
-                            padding: '5px 12px', borderRadius: '7px', fontSize: '12px', fontWeight: 500,
-                            textDecoration: 'none',
-                            ...(isTraced
-                              ? { color: '#16a34a', background: '#dcfce7', border: '1px solid #bbf7d0' }
-                              : { color: 'white', background: '#1d6187', border: '1px solid transparent' }
-                            ),
-                          }}
-                        >
-                          {isTraced ? 'View trace' : 'Run trace →'}
-                        </Link>
-                      </div>
-                    )
-                  })}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <FeatureList
+          projectId={id}
+          usecases={(usecases ?? []).map(uc => ({
+            ...uc,
+            relevant_stacks: (uc.relevant_stacks as string[] | null) ?? [],
+          }))}
+          tracedIds={[...tracedIds]}
+          projectStack={project.stack ?? []}
+          totalUsecases={totalUsecases}
+          tracedCount={tracedCount}
+        />
 
         {/* Challenges */}
         <section style={{ minWidth: 0 }}>
-          <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: '12px' }}>
-            Challenges
-            <span style={{ fontSize: '12px', fontWeight: 400, color: '#9ca3af', marginLeft: '8px' }}>
-              {solvedCount} / {totalChallenges} solved
-            </span>
-          </p>
-
-          {totalChallenges === 0 ? (
-            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: '13px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-              Challenges will appear once more features are traced.
+          <div className="card">
+            <div className="card-header">
+              <span className="card-header-title">Challenges</span>
+              <span className="card-header-meta">{solvedCount} / {totalChallenges} solved</span>
             </div>
-          ) : (
-            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-              {[...(challenges ?? [])].sort((a, b) => {
-                const aSolved = submissionByChallenge[a.id] && submissionByChallenge[a.id] !== 'missed'
-                const bSolved = submissionByChallenge[b.id] && submissionByChallenge[b.id] !== 'missed'
-                return (aSolved ? 1 : 0) - (bSolved ? 1 : 0)
-              }).map((ch, i) => {
-                const grade = submissionByChallenge[ch.id]
-                const icon = grade ? GRADE_ICON[grade] : null
-                const isSolved = grade && grade !== 'missed'
-                return (
-                  <div
-                    key={ch.id}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '12px 14px',
-                      borderTop: i > 0 ? '1px solid #f9fafb' : undefined,
-                      background: isSolved ? '#f0fdf4' : 'white',
-                      gap: '10px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <span style={{ fontSize: '14px', lineHeight: 1, flexShrink: 0, width: '18px', textAlign: 'center' }}>
-                        {icon ?? <span style={{ color: '#e5e7eb' }}>○</span>}
-                      </span>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: '12px', fontWeight: 500, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {ch.title}
-                        </p>
-                        <p style={{ fontSize: '11px', color: '#d97706', marginTop: '1px' }}>
-                          {DIFFICULTY_STARS[ch.difficulty] ?? '★☆☆'}
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      href={`/projects/${id}/challenge/${ch.id}`}
+
+            {totalChallenges === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
+                Challenges will appear once more features are traced.
+              </div>
+            ) : (
+              <div style={{ overflow: 'hidden' }}>
+                {[...(challenges ?? [])].sort((a, b) => {
+                  const aSolved = submissionByChallenge[a.id] && submissionByChallenge[a.id] !== 'missed'
+                  const bSolved = submissionByChallenge[b.id] && submissionByChallenge[b.id] !== 'missed'
+                  return (aSolved ? 1 : 0) - (bSolved ? 1 : 0)
+                }).map((ch, i) => {
+                  const grade = submissionByChallenge[ch.id]
+                  const icon = grade ? GRADE_ICON[grade] : null
+                  const isSolved = grade && grade !== 'missed'
+                  return (
+                    <div
+                      key={ch.id}
                       style={{
-                        flexShrink: 0,
-                        padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 500,
-                        textDecoration: 'none',
-                        ...(isSolved
-                          ? { color: '#16a34a', background: '#dcfce7', border: '1px solid #bbf7d0' }
-                          : { color: 'white', background: '#1d6187', border: '1px solid transparent' }
-                        ),
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        borderTop: i > 0 ? '1px solid #f9fafb' : undefined,
+                        background: isSolved ? '#f0fdf4' : 'white',
+                        gap: '10px',
                       }}
                     >
-                      {grade ? 'Retry' : 'Start'}
-                    </Link>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <span style={{ fontSize: '14px', lineHeight: 1, flexShrink: 0, width: '18px', textAlign: 'center' }}>
+                          {icon ?? <span style={{ color: '#e5e7eb' }}>○</span>}
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: '12px', fontWeight: 500, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {ch.title}
+                          </p>
+                          <p style={{ fontSize: '11px', color: '#d97706', marginTop: '1px' }}>
+                            {DIFFICULTY_STARS[ch.difficulty] ?? '★☆☆'}
+                          </p>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/projects/${id}/challenge/${ch.id}`}
+                        style={{
+                          flexShrink: 0,
+                          padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 500,
+                          textDecoration: 'none',
+                          ...(isSolved
+                            ? { color: '#16a34a', background: '#dcfce7', border: '1px solid #bbf7d0' }
+                            : { color: 'white', background: '#1d6187', border: '1px solid transparent' }
+                          ),
+                        }}
+                      >
+                        {grade ? 'Retry' : 'Start'}
+                      </Link>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </section>
 
       </div>

@@ -21,46 +21,42 @@ export default async function ProjectsPage() {
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">All projects</h1>
-        <Link
-          href="/projects/new"
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
-        >
-          + New project
-        </Link>
+    <div className="card">
+      <div className="card-header">
+        <span className="card-header-title">All projects ({projectsWithProgress.length})</span>
+        <Link href="/projects/new" className="card-header-action">+ New project</Link>
       </div>
-
-      {projectsWithProgress.length === 0 ? (
-        <div className="flex flex-col items-center py-20 text-center">
-          <p className="text-gray-400 text-sm">No projects yet.</p>
-          <Link
-            href="/projects/new"
-            className="mt-4 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
-          >
-            Upload your first project
-          </Link>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-          {projectsWithProgress.map(p => (
-            <ProjectCard
-              key={p.id}
-              id={p.id}
-              name={p.name}
-              status={p.status}
-              stack={p.stack ?? []}
-              fileCount={p.file_count}
-              createdAt={p.created_at}
-              traceCount={p.traceCount}
-              usecaseCount={p.usecaseCount}
-              solvedCount={p.solvedCount}
-              challengeCount={p.challengeCount}
-            />
-          ))}
-        </div>
-      )}
+      <div className="card-body">
+        {projectsWithProgress.length === 0 ? (
+          <div className="flex flex-col items-center py-20 text-center">
+            <p className="text-gray-400 text-sm">No projects yet.</p>
+            <Link
+              href="/projects/new"
+              className="mt-4 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
+            >
+              Upload your first project
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+            {projectsWithProgress.map(p => (
+              <ProjectCard
+                key={p.id}
+                id={p.id}
+                name={p.name}
+                status={p.status}
+                stack={p.stack ?? []}
+                fileCount={p.file_count}
+                createdAt={p.created_at}
+                traceCount={p.traceCount}
+                usecaseCount={p.usecaseCount}
+                solvedCount={p.solvedCount}
+                challengeCount={p.challengeCount}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

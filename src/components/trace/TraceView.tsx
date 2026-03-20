@@ -12,6 +12,7 @@ interface FlowStep {
   description: string
   file: string
   line: number
+  snippet?: string
 }
 
 interface TraceViewProps {
@@ -24,7 +25,7 @@ interface TraceViewProps {
 
 export function TraceView({ name, relatedFiles, flow, explanation, cached }: TraceViewProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">{name}</h2>
         {cached && (
@@ -34,52 +35,58 @@ export function TraceView({ name, relatedFiles, flow, explanation, cached }: Tra
         )}
       </div>
 
-      {/* 関連ファイル */}
+      {/* Working backwards */}
       <section>
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand">
-          Your idea became these files:
-        </h3>
-        <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white shadow-sm">
-          {relatedFiles.map((file, i) => (
-            <div key={file.path} className="flex items-start gap-3 px-4 py-3.5">
-              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand-subtle text-xs font-bold text-brand">
-                {i + 1}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate font-mono text-sm font-medium text-gray-900">
-                  {file.path}
-                </p>
-                <p className="text-sm text-gray-500">{file.role}</p>
-                {file.keyLines.length > 0 && (
-                  <p className="mt-0.5 text-xs text-gray-400">
-                    Key lines: {file.keyLines.join(', ')}
-                  </p>
-                )}
-              </div>
+        <div className="card">
+          <div className="card-header">
+            <span className="card-header-title">Working backwards</span>
+          </div>
+          <div className="card-body">
+            <p className="text-sm leading-relaxed text-gray-700">{explanation}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* 2列レイアウト: Related files (左) | Processing flow (右) */}
+      <div className="flex gap-12 items-start">
+
+        {/* Related files — 左 25% sticky */}
+        <div className="w-1/3 shrink-0 sticky top-20">
+          <div className="card">
+            <div className="card-header">
+              <span className="card-header-title">Your idea lives in these files</span>
             </div>
-          ))}
+            <div className="divide-y divide-gray-100">
+              {relatedFiles.map((file, i) => (
+                <div key={file.path} className="flex items-start gap-3 px-4 py-4">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-brand-subtle text-xs font-bold text-brand">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-sm font-medium text-gray-900">
+                      {file.path.split('/').pop()}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1 leading-snug">{file.role}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </section>
 
-      {/* 処理フロー */}
-      <section>
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand">
-          Processing flow
-        </h3>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <FlowStepper flow={flow} />
+        {/* Processing flow — 右 75% */}
+        <div className="flex-1 min-w-0">
+          <div className="card">
+            <div className="card-header">
+              <span className="card-header-title">Processing flow</span>
+            </div>
+            <div className="card-body">
+              <FlowStepper flow={flow} />
+            </div>
+          </div>
         </div>
-      </section>
 
-      {/* やさしい説明 */}
-      <section>
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand">
-          Working backwards:
-        </h3>
-        <div className="rounded-xl border border-brand-subtle bg-brand-subtle px-4 py-4">
-          <p className="text-sm leading-relaxed text-gray-700">{explanation}</p>
-        </div>
-      </section>
+      </div>
     </div>
   )
 }

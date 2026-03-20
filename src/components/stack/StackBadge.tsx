@@ -85,7 +85,7 @@ function StackModal({ entry, onClose }: { entry: StackEntry; onClose: () => void
         {/* Best for */}
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '14px 16px' }}>
           <p style={{ fontSize: '11px', fontWeight: 600, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
-            こんな時に向いている
+            Best for
           </p>
           <p style={{ fontSize: '13px', color: '#166534', lineHeight: '1.6' }}>{entry.bestFor}</p>
         </div>
@@ -94,7 +94,7 @@ function StackModal({ entry, onClose }: { entry: StackEntry; onClose: () => void
         {entry.alternatives.length > 0 && (
           <div>
             <p style={{ fontSize: '11px', fontWeight: 600, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>
-              同じ役割の他のスタック
+              Alternatives
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {entry.alternatives.map(alt => (
@@ -118,7 +118,7 @@ function StackModal({ entry, onClose }: { entry: StackEntry; onClose: () => void
             alignSelf: 'flex-start',
           }}
         >
-          詳しく見る →
+          Learn more →
         </Link>
       </div>
     </div>

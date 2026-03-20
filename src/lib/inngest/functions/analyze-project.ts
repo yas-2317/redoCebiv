@@ -47,7 +47,7 @@ export const analyzeProject = inngest.createFunction(
     })
 
     // Step 2: ハッシュ保存 + project_files INSERT
-    await step.run('save-files', async () => {
+    const { stack } = await step.run('save-files', async () => {
       const stack = detectStack(files)
       // zip_hash + stack を保存
       await supabase
@@ -68,13 +68,14 @@ export const analyzeProject = inngest.createFunction(
         const { error } = await supabase.from('project_files').upsert(batch, { onConflict: 'project_id,path' })
         if (error) throw new Error(`project_files insert error: ${error.message}`)
       }
+      return { stack }
     })
 
-    // Step 3: ユースケース抽出（Claude Sonnet）
+    // Step 3: ユースケース抽出（Claude Haiku）
     const usecases = await step.run('extract-usecases', async () => {
       const selectedFiles = selectFilesForAnalysis(files, TOKEN_LIMITS.USECASE_EXTRACTION)
       const fileContext = buildFileContext(selectedFiles)
-      return extractUsecases(fileContext)
+      return extractUsecases(fileContext, stack)
     })
 
     // Step 4: usecases INSERT
@@ -85,6 +86,7 @@ export const analyzeProject = inngest.createFunction(
         description: uc.description,
         category: uc.category ?? 'other',
         related_file_paths: uc.related_file_paths,
+        relevant_stacks: uc.relevant_stacks ?? [],
         display_order: i,
       }))
       const { error } = await supabase.from('usecases').insert(rows)
@@ -96,7 +98,7 @@ export const analyzeProject = inngest.createFunction(
     await step.run('generate-challenges', async () => {
       const selectedFiles = selectFilesForAnalysis(files, TOKEN_LIMITS.CHALLENGE_GENERATION)
       const fileContext = buildFileContext(selectedFiles)
-      const challenges = await generateChallenges(fileContext, usecases)
+      const challenges = await generateChallenges(fileContext, usecases, stack)
 
       const VALID_TYPES = new Set(['text_change', 'condition', 'validation', 'display'])
       const normalizeType = (t: string): string => {

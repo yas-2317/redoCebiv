@@ -1,14 +1,29 @@
+export type StackRole =
+  | 'Meta framework'
+  | 'UI library'
+  | 'UI framework'
+  | 'Web framework'
+  | 'Mobile framework'
+  | 'Language'
+  | 'Apple platform language'
+  | 'Build tool'
+  | 'Backend framework'
+  | 'ORM'
+  | 'BaaS'
+
+export type StackAlternative = {
+  label: string
+  slug: string
+  vs: string
+}
+
 export type StackEntry = {
   label: string
   slug: string
-  role: string
+  role: StackRole
   description: string
   bestFor: string
-  alternatives: Array<{
-    label: string
-    slug: string
-    vs: string
-  }>
+  alternatives: StackAlternative[]
 }
 
 export const STACK_REFERENCE: StackEntry[] = [
@@ -18,19 +33,19 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'nextjs',
     role: 'Meta framework',
     description:
-      'Reactをベースにしたフルスタックフレームワーク。ページルーティング、SSR（サーバーサイドレンダリング）、APIルートをひとつのリポジトリで管理できる。App Router（v13以降）によりサーバーコンポーネントとクライアントコンポーネントを使い分けられる。',
+      'A full-stack framework built on React. With App Router, layouts, file-based routing, Server Components / Client Components, Route Handlers, and Server Functions can all be managed in one repository.',
     bestFor:
-      'SEOが重要なWebアプリ、フロントエンドとバックエンドを同一リポジトリで管理したい場合、Reactエコシステムを使いながらSSRが必要なとき。',
+      'Web apps where SEO matters, when you want to manage front-end and back-end in the same repo, or when you want to use the React ecosystem alongside SSR and server-side processing.',
     alternatives: [
       {
         label: 'Remix',
         slug: 'remix',
-        vs: '同じくフルスタックReactフレームワーク。Web標準（fetch/FormData）に忠実で、フォーム処理やローディング状態の管理が得意。Next.jsより学習コストが低いと言われる。',
+        vs: 'Also offers a React-based full-stack experience. Remix-style loader/action data flow and a Web Standards-oriented design can be more intuitive.',
       },
       {
         label: 'Vite',
         slug: 'vite',
-        vs: 'ビルドツール。SSRなしのSPA（シングルページアプリ）を作るなら設定が少なくシンプル。サーバーサイドの機能は自前で用意する必要がある。',
+        vs: 'A build tool. For SPAs without SSR, setup is minimal and simple. Server-side features need to be added separately.',
       },
     ],
   },
@@ -39,14 +54,14 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'nuxt',
     role: 'Meta framework',
     description:
-      'Vueをベースにしたフルスタックフレームワーク。Next.jsのVue版に相当し、ファイルベースルーティング、SSR、APIルートを提供する。Nitroエンジンにより様々なホスティング環境にデプロイできる。',
+      'A full-stack framework built on Vue. Provides file-based routing, SSR/SSG, and server features; Nitro makes it easy to deploy to Node.js, serverless, and edge environments.',
     bestFor:
-      'Vueを使いながらSSRやフルスタック開発をしたい場合。Vueエコシステムに慣れているチーム。',
+      'When you want SSR or full-stack development while using Vue. Teams familiar with the Vue ecosystem.',
     alternatives: [
       {
         label: 'Vue',
         slug: 'vue',
-        vs: 'NuxtはVue上に構築されている。SSRや規約が不要でSPAのみ作りたいならVue単体の方がシンプル。',
+        vs: 'Vue alone is simpler if you want to start light with an SPA without SSR or conventions. Nuxt provides a ready-made structure that makes it easy to set up a production-ready foundation from the start.',
       },
     ],
   },
@@ -55,14 +70,14 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'sveltekit',
     role: 'Meta framework',
     description:
-      'Svelteをベースにしたフルスタックフレームワーク。仮想DOMを使わないSvelteの特性により、バンドルサイズが小さくランタイムパフォーマンスが高い。ファイルベースルーティングとSSRをサポート。',
+      'A full-stack framework built on Svelte. Comes with file-based routing, SSR, form handling, and server features, letting you build apps that take advantage of Svelte\'s lightweight runtime characteristics.',
     bestFor:
-      'パフォーマンスを重視したい場合、仮想DOMのオーバーヘッドを避けたい場合。ReactやVueより学習コストが低い。',
+      'When performance is a priority, when you want to avoid virtual DOM overhead, or when you want to build web apps with relatively less code.',
     alternatives: [
       {
         label: 'Next.js',
         slug: 'nextjs',
-        vs: 'ReactベースでエコシステムとサードパーティライブラリはNext.jsの方が圧倒的に豊富。SvelteKitはバンドルサイズと書きやすさに強み。',
+        vs: 'React-based, with a broader ecosystem and third-party libraries. SvelteKit\'s strength is its lightweight nature and concise syntax.',
       },
     ],
   },
@@ -71,14 +86,14 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'remix',
     role: 'Meta framework',
     description:
-      'Web標準（fetch API、FormData、HTTP）に忠実なReactフレームワーク。ローダー（データ取得）とアクション（データ送信）の分離が明確で、フォーム処理とエラーハンドリングが得意。',
+      'A React-based framework experience that inherits the Remix philosophy. The latest framework features are now integrated into React Router v7, enabling loader/action-based data flow, server rendering, pre-rendering, streaming, and type generation.',
     bestFor:
-      'フォームが多いアプリ、Web標準を重視したい場合、ネスト構造のルーティングを活用したい場合。',
+      'Form-heavy apps, when you want to prioritize Web standards, when you want clear separation of data fetching and submission concerns, or when you want to leverage nested routing.',
     alternatives: [
       {
         label: 'Next.js',
         slug: 'nextjs',
-        vs: 'Next.jsの方がエコシステムが大きく情報も多い。RemixはWeb標準への準拠とデータフローの明確さに強み。',
+        vs: 'Next.js has more resources and integrations. Remix-style excels in its Web Standards-oriented design and the clarity of loader/action data flow.',
       },
     ],
   },
@@ -87,106 +102,108 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'astro',
     role: 'Meta framework',
     description:
-      'コンテンツ重視のWebサイト向けフレームワーク。デフォルトでJavaScriptを最小化し（Islands Architecture）、静的HTMLを多く出力するためページ表示が非常に速い。React/Vue/Svelteコンポーネントを混在させられる。',
+      'A framework for content-focused websites. Adopts Islands Architecture that minimizes JavaScript by default, outputting mostly static HTML for fast page loads. React/Vue/Svelte components can be mixed together.',
     bestFor:
-      'ブログ、ドキュメントサイト、マーケティングページなどコンテンツ中心のサイト。SEOとパフォーマンスを最優先したい場合。',
+      'Content-centric sites like blogs, documentation sites, and marketing pages. When SEO and performance are the top priority.',
     alternatives: [
       {
         label: 'Next.js',
         slug: 'nextjs',
-        vs: 'Next.jsはインタラクティブなアプリ向け。Astroは静的コンテンツ中心でJSを極力使わないサイトに向く。',
+        vs: 'Next.js is suited for interactive apps. Astro is ideal for static-content-heavy sites where only specific parts need to be interactive.',
       },
     ],
   },
-  // ── UI libraries ─────────────────────────────────────────────
+
+  // ── UI libraries / frameworks ────────────────────────────────
   {
     label: 'React',
     slug: 'react',
     role: 'UI library',
     description:
-      'MetaのオープンソースUIライブラリ。コンポーネントベースでUIを構築し、状態管理とレンダリングを担う。Next.js/Remix/React Nativeなどのフレームワークの土台として使われることが多い。',
+      'A library for building UIs using a component-based approach. With a clear model for state management and rendering, it serves as the foundation for many frameworks including Next.js, Remix, and React Native.',
     bestFor:
-      '豊富なエコシステムを活用したい場合。チームにReact経験者がいる場合。フレームワークを選ばず素のReactで作りたい場合。',
+      'When you want to leverage a rich ecosystem. When the team has React experience. When you want to build with plain React without committing to a specific framework.',
     alternatives: [
       {
         label: 'Vue',
         slug: 'vue',
-        vs: 'VueはHTMLテンプレート構文に近く学習コストが低い。Reactはより「JavaScript的」な書き方。',
+        vs: 'Vue\'s template syntax is more familiar to traditional HTML/CSS developers and easier to adopt incrementally. React\'s strength is its JS/TS-centric design and broad ecosystem.',
       },
       {
         label: 'Svelte',
         slug: 'svelte',
-        vs: 'Svelteはコンパイル時に最適化されるため仮想DOMがなく、バンドルサイズが小さい。Reactはエコシステムが圧倒的に大きい。',
+        vs: 'Svelte is optimized at compile time for a lightweight runtime. React has more resources and library choices.',
       },
     ],
   },
   {
     label: 'Vue',
     slug: 'vue',
-    role: 'UI library',
+    role: 'UI framework',
     description:
-      'プログレッシブなUIフレームワーク。HTMLテンプレート構文と単一ファイルコンポーネント（.vue）が特徴で、HTMLとCSSとJavaScriptを1ファイルにまとめて書ける。学習コストが低く段階的に導入しやすい。',
+      'A progressive JavaScript UI framework. While based on standard HTML/CSS/JavaScript, it makes it easy to build UIs with Single File Components (.vue) and reactive state management.',
     bestFor:
-      'HTML/CSS中心のバックグラウンドを持つ開発者、既存のHTMLページに段階的にインタラクティブ性を追加したい場合。',
+      'Developers with an HTML/CSS background, when you want to incrementally add interactivity to existing HTML pages, or when you prefer less complex syntax.',
     alternatives: [
       {
         label: 'React',
         slug: 'react',
-        vs: 'Reactはより大きなエコシステムと求人数を持つ。Vueはシンプルな構文と公式ドキュメントの質の高さが強み。',
+        vs: 'React has a larger ecosystem and more adoption. Vue\'s strength is its approachable syntax and ease of incremental adoption.',
       },
     ],
   },
   {
     label: 'Svelte',
     slug: 'svelte',
-    role: 'UI library',
+    role: 'UI framework',
     description:
-      '仮想DOMを持たないUIフレームワーク。ビルド時にコンパイルして最小限のJavaScriptを出力するため、ランタイムが軽い。テンプレート構文がシンプルでボイラープレートが少ない。',
+      'A UI framework that uses a compiler. Components are optimized at build time and converted into small, efficient JavaScript, resulting in minimal browser-side overhead.',
     bestFor:
-      'バンドルサイズとパフォーマンスを重視する場合。小〜中規模のプロジェクト。書き方のシンプルさを求める場合。',
+      'When bundle size and performance matter. Small to medium projects. When you want to build UIs with less code.',
     alternatives: [
       {
         label: 'React',
         slug: 'react',
-        vs: 'Reactはエコシステムと求人が圧倒的に多い。Svelteはコード量が少なくパフォーマンスに優れる。',
+        vs: 'React has more resources and libraries. Svelte is more concise and achieves a lighter runtime.',
       },
     ],
   },
   {
     label: 'Angular',
     slug: 'angular',
-    role: 'UI framework',
+    role: 'Web framework',
     description:
-      'Googleが開発するフルスタックフロントエンドフレームワーク。DI（依存性注入）、ルーティング、フォーム、HTTPクライアントが標準で含まれる。TypeScriptが必須で、大規模アプリ向けに設計されている。',
+      'A web framework with Google-led development. Components, dependency injection (DI), routing, forms, and HTTP functionality are all integrated, making it easy to maintain structure in large-scale apps.',
     bestFor:
-      '大規模エンタープライズアプリ、強い規約と標準化を求めるチーム、Java/C#バックグラウンドの開発者。',
+      'Large-scale enterprise apps, teams that need strong conventions and standardization, developers with a Java/C# background.',
     alternatives: [
       {
         label: 'React',
         slug: 'react',
-        vs: 'ReactはUIのみに集中したライブラリで自由度が高い。Angularはフレームワーク全体が統合されており規約が強い。',
+        vs: 'React is a UI-focused library with more flexibility. Angular is a fully integrated framework that\'s easy to develop with convention-based approaches.',
       },
     ],
   },
+
   // ── Mobile ───────────────────────────────────────────────────
   {
     label: 'React Native',
     slug: 'react-native',
     role: 'Mobile framework',
     description:
-      'ReactでiOS/Androidアプリを構築するフレームワーク。JavaScriptでネイティブUIコンポーネントを操作し、Webビューではなく本物のネイティブUIを出力する。Expoと組み合わせて使うことが多い。',
+      'A framework for building iOS/Android apps with React. Renders using native UI components rather than WebView. Often used in combination with Expo.',
     bestFor:
-      'Reactの知識を活かしてモバイルアプリを作りたい場合、iOS/Androidを同一コードでカバーしたい場合。',
+      'When you want to leverage React knowledge to build mobile apps, or when you want to cover iOS/Android with a single codebase.',
     alternatives: [
       {
         label: 'Flutter',
         slug: 'flutter',
-        vs: 'DartというGoogleの言語を使い、独自レンダリングエンジンで描画するためUIの一貫性が高い。React Nativeより細かいUIカスタマイズがしやすい。',
+        vs: 'Uses Dart and renders with its own engine, making it easier to maintain visual consistency. React Native is better for leveraging existing React/JS assets.',
       },
       {
         label: 'Swift',
         slug: 'swift',
-        vs: 'iOSネイティブ開発。パフォーマンスとAppleエコシステムへの統合が最高だが、iOS専用。',
+        vs: 'Native iOS development. Strong integration with Apple platforms and latest API support, but primarily iOS-focused.',
       },
     ],
   },
@@ -195,52 +212,53 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'flutter',
     role: 'Mobile framework',
     description:
-      'GoogleのDart言語を使いiOS/Android/Web/デスクトップアプリを構築するフレームワーク。独自レンダリングエンジン（Skia/Impeller）によりプラットフォームに依存しない一貫したUIを実現する。',
+      'A framework for building iOS/Android/Web/desktop apps using Google\'s Dart language. Its custom rendering engine makes it easy to create consistent UIs that aren\'t dependent on the platform.',
     bestFor:
-      'iOS/Androidで見た目を完全に統一したい場合、UI表現力を重視する場合、モバイル以外（Web/デスクトップ）にも展開したい場合。',
+      'When you want a strongly unified look across iOS and Android, when UI expressiveness is a priority, or when you want to expand to platforms beyond mobile (Web/desktop).',
     alternatives: [
       {
         label: 'React Native',
         slug: 'react-native',
-        vs: 'JavaScript/Reactの知識が活かせる。ネイティブコンポーネントを使うためOSのUIに自然に馴染む。Flutterより既存のJS資産を活用しやすい。',
+        vs: 'Can leverage React/JavaScript knowledge. Uses native components, so it naturally fits the OS\'s visual style.',
       },
     ],
   },
   {
     label: 'Swift',
     slug: 'swift',
-    role: 'iOS/macOS language',
+    role: 'Apple platform language',
     description:
-      'Appleが開発するiOS/macOS/watchOS向けのプログラミング言語。Objective-Cの後継で、型安全・高速・モダンな構文が特徴。SwiftUIフレームワークと組み合わせることで宣言的UIを構築できる。',
+      'A programming language developed by Apple. Core to Apple platform development across iOS, iPadOS, macOS, watchOS, and tvOS; can be combined with SwiftUI to build declarative UIs.',
     bestFor:
-      'iOSアプリをAppleの最新機能（ARKit、Core ML、WidgetKit等）と完全に統合したい場合。パフォーマンスが最重要なiOSアプリ。',
+      'When you want deep integration with Apple\'s latest features (SwiftUI, Core ML, WidgetKit, etc.) for iOS apps. When you prioritize the best Apple platform experience.',
     alternatives: [
       {
         label: 'React Native',
         slug: 'react-native',
-        vs: 'iOS/Androidクロスプラットフォームが可能。JavaScriptエコシステムを活用できる。SwiftよりApple固有機能へのアクセスは制限される。',
+        vs: 'Enables cross-platform iOS/Android development. Can leverage the JavaScript ecosystem, but Apple-specific feature integration is less direct than with Swift.',
       },
       {
         label: 'Flutter',
         slug: 'flutter',
-        vs: 'iOS/Androidクロスプラットフォームかつ独自UIレンダリング。SwiftよりApple APIへのアクセスは間接的。',
+        vs: 'Well-suited for iOS/Android cross-platform development. Visual consistency is high, but it\'s more distant from Apple native APIs than Swift.',
       },
     ],
   },
+
   // ── Language / Runtime ───────────────────────────────────────
   {
     label: 'TypeScript',
     slug: 'typescript',
     role: 'Language',
     description:
-      'JavaScriptに静的型システムを追加したMicrosoftの言語。コンパイル時に型エラーを検出できるため、バグの早期発見とIDEの補完が大幅に向上する。最終的にJavaScriptにコンパイルされる。',
+      'A language that adds a static type system to JavaScript. Detects type errors at compile time, significantly improving bug detection and IDE code completion. Compiles down to JavaScript.',
     bestFor:
-      '中〜大規模プロジェクト、チーム開発、長期保守が必要なプロジェクト。AIコード生成との相性が特に良い（型情報がAIの補完精度を上げる）。',
+      'Medium to large projects, team development, projects requiring long-term maintenance. Also works well with AI code generation.',
     alternatives: [
       {
         label: 'JavaScript',
         slug: 'javascript',
-        vs: '型定義なしで素早く書けるが、大規模になると型安全性の欠如がバグを増やす。プロトタイプや小規模スクリプトには十分。',
+        vs: 'Can be written quickly without type definitions, but lack of type safety becomes a problem at scale. Sufficient for prototypes or small scripts.',
       },
     ],
   },
@@ -249,14 +267,14 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'python',
     role: 'Language',
     description:
-      '可読性の高い汎用プログラミング言語。Webバックエンド（Django/FastAPI）、データサイエンス、機械学習、スクリプトなど幅広い用途に使われる。AIエコシステムのデファクトスタンダード。',
+      'A highly readable general-purpose programming language. Used widely for web backends, data processing, machine learning, and scripting. Particularly strong ecosystem in the AI/ML space.',
     bestFor:
-      'AI/MLプロジェクト、データ処理、バックエンドAPI（FastAPI/Django）、プロトタイピング。',
+      'AI/ML projects, data processing, backend APIs (FastAPI/Django), prototyping.',
     alternatives: [
       {
         label: 'TypeScript',
         slug: 'typescript',
-        vs: 'WebフロントエンドはTypeScriptの独壇場。バックエンドAPIはNode.js(TypeScript)とPythonどちらも選択肢になる。PythonはAI/MLライブラリが圧倒的に豊富。',
+        vs: 'TypeScript is stronger for web frontends and Node.js backends. Python has a rich library ecosystem for AI/ML and data processing.',
       },
     ],
   },
@@ -265,70 +283,73 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'ruby-on-rails',
     role: 'Web framework',
     description:
-      'Rubyで書かれたフルスタックWebフレームワーク。「設定より規約」の哲学により少ないコードで多くの機能を実現できる。MVC構造、ORM（ActiveRecord）、マイグレーションが統合されている。',
+      'A full-stack web framework written in Ruby. Its "convention over configuration" philosophy enables a lot of functionality with minimal code. MVC structure, ORM (Active Record), and migrations are integrated.',
     bestFor:
-      '素早いプロトタイピングとMVP開発、CRUD中心のWebアプリ、スタートアップの初期プロダクト。',
+      'Rapid prototyping and MVP development, CRUD-heavy web apps, early-stage startup products.',
     alternatives: [
       {
         label: 'Next.js',
         slug: 'nextjs',
-        vs: 'TypeScript/JavaScriptエコシステムを使いたい場合はNext.js+APIルートで同様のフルスタック開発が可能。RailsはRubyの資産と規約の強さが強み。',
+        vs: 'Next.js is a strong choice for full-stack development in the TypeScript/JavaScript ecosystem. Rails excels in its convention strength and development speed.',
       },
     ],
   },
+
   // ── CSS ──────────────────────────────────────────────────────
   {
     label: 'Tailwind',
     slug: 'tailwind',
-    role: 'CSS framework',
+    role: 'UI framework',
     description:
-      'ユーティリティファーストのCSSフレームワーク。`flex`, `pt-4`, `text-gray-700`のような小さなクラスをHTMLに直接書いてスタイリングする。カスタムCSSを書く量が減り、デザインの一貫性が保ちやすい。',
+      'A utility-first CSS framework. Style by combining small classes like `flex`, `pt-4`, and `text-gray-700` directly. Reduces the amount of custom CSS you need to write.',
     bestFor:
-      'コンポーネントベースのUIフレームワーク（React/Vue）との相性が良い。デザインシステムを柔軟にカスタマイズしたい場合。AIコード生成との相性が特に良い。',
+      'When combining with component-based UI frameworks (React/Vue). When you want flexible customization of a design system. Also works well with AI code generation.',
     alternatives: [
       {
         label: 'CSS Modules',
         slug: 'css-modules',
-        vs: 'コンポーネントごとにスコープされたCSSを書く方式。クラス名の衝突がなく、通常のCSS構文をそのまま使える。Tailwindより記述量は多い。',
+        vs: 'Writes scoped CSS per component. Regular CSS syntax can be used as-is, but tends to require more styling code than Tailwind.',
       },
     ],
   },
+
   // ── Build tools ──────────────────────────────────────────────
   {
     label: 'Vite',
     slug: 'vite',
     role: 'Build tool',
     description:
-      'ES Modulesを活用した高速なフロントエンドビルドツール。開発サーバーの起動が非常に速く、HMR（ホットモジュールリロード）もほぼ瞬時。React/Vue/Svelteなど主要フレームワークのテンプレートが用意されている。',
+      'A fast front-end build tool leveraging ES Modules. Dev server starts fast, and HMR (Hot Module Replacement) is snappy. Templates for major frameworks like React, Vue, and Svelte are available.',
     bestFor:
-      'SSRが不要なSPA開発、Next.js等のメタフレームワークを使わずReact/Vueだけで作りたい場合、高速な開発体験を求める場合。',
+      'SPA development without SSR, when you want to build with just React/Vue without a meta-framework, when you want a fast development experience.',
     alternatives: [
       {
         label: 'Next.js',
         slug: 'nextjs',
-        vs: 'Next.jsはSSR/SSG/APIルートを含む統合フレームワーク。ViteはSSRなしのSPAに特化した軽量ビルドツール。',
+        vs: 'Next.js is an integrated framework with SSR/SSG/server processing. Vite is suitable for when you want to start front-end development simply.',
       },
     ],
   },
+
   // ── Backend ──────────────────────────────────────────────────
   {
     label: 'Express',
     slug: 'express',
     role: 'Backend framework',
     description:
-      'Node.jsの最も有名なWebフレームワーク。最小限の構造のみを提供し、ミドルウェアを積み重ねてAPIやWebサーバーを構築する。シンプルで自由度が高いが、大規模では構造化が必要。',
+      'One of the most widely used web frameworks for Node.js. Provides minimal structure only, building APIs and web servers by stacking middleware. Highly flexible, but conventions need to be defined yourself.',
     bestFor:
-      '軽量なAPIサーバー、既存のExpressコードベースのメンテナンス、Node.jsを自由にコントロールしたい場合。',
+      'Lightweight API servers, maintaining existing Express codebases, when you want fine-grained control over Node.js.',
     alternatives: [
       {
         label: 'Hono',
         slug: 'hono',
-        vs: 'ExpressよりモダンなAPIを持ち、Edge Runtime（Cloudflare Workers等）でも動作する。型安全性が高くTypeScriptとの相性が良い。',
+        vs: 'Hono has a more modern API design and strong edge support. Express has years of proven use and many surrounding middlewares.',
       },
       {
         label: 'NestJS',
         slug: 'nestjs',
-        vs: 'Angularライクなデコレータ構文で大規模アプリを構造化できる。Expressより規約が強くチーム開発向き。',
+        vs: 'NestJS has strong conventions and structure, easier to align in large team development. Express can be started more lightly.',
       },
     ],
   },
@@ -337,14 +358,14 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'hono',
     role: 'Backend framework',
     description:
-      '軽量・高速なWebフレームワーク。Cloudflare Workers、Deno、Bun、Node.jsなど多くのランタイムで動作する。TypeScript型安全なルーティングとミドルウェアを提供し、バンドルサイズが非常に小さい。',
+      'A lightweight and fast web framework. Runs on many runtimes including Cloudflare Workers, Deno, Bun, and Node.js. Works well with TypeScript and is suited for lightweight API servers and edge deployments.',
     bestFor:
-      'Edge Runtime（Cloudflare Workers/Vercel Edge）でのAPI、軽量なAPIが必要な場合、TypeScriptとの完全な型安全性を求める場合。',
+      'APIs on Edge Runtime (Cloudflare Workers / Vercel Edge), when lightweight APIs are needed, when you want simple TypeScript-first configuration.',
     alternatives: [
       {
         label: 'Express',
         slug: 'express',
-        vs: 'Expressは長年の実績とエコシステムの広さが強み。HonoはモダンなAPI・Edge対応・高速さが強み。',
+        vs: 'Express has a wealth of proven track record and resources. Hono\'s strengths are its lightweight nature, cross-runtime compatibility, and edge suitability.',
       },
     ],
   },
@@ -353,14 +374,14 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'nestjs',
     role: 'Backend framework',
     description:
-      'TypeScriptファーストのNode.jsフレームワーク。AngularにインスパイアされたDI（依存性注入）とデコレータ構文を採用し、大規模アプリのコード構造を統一できる。内部でExpressまたはFastifyを使う。',
+      'A TypeScript-first Node.js framework. Adopts DI (dependency injection) and decorator syntax similar to Angular, making it easy to unify code structure in large-scale apps. Can use Express or Fastify internally.',
     bestFor:
-      '大規模バックエンドAPI、チーム開発で規約を統一したい場合、マイクロサービス構成、Javaのようなエンタープライズ設計を求める場合。',
+      'Large-scale backend APIs, when you want to unify conventions in team development, or when you need modular structure or enterprise-oriented design.',
     alternatives: [
       {
         label: 'Express',
         slug: 'express',
-        vs: 'Expressはシンプルで自由度が高い。NestJSは構造と規約が強く、大規模でも見通しが良い反面、学習コストが高い。',
+        vs: 'Express is simple with high flexibility. NestJS has strong structure and conventions, maintaining clarity even at scale.',
       },
     ],
   },
@@ -369,36 +390,37 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'fastify',
     role: 'Backend framework',
     description:
-      'Node.jsの高速WebフレームワークでExpressの後継として設計された。JSON SchemaによるリクエストのバリデーションとシリアライゼーションでExpressより大幅に高速。TypeScriptサポートも良好。',
+      'A high-performance web framework for Node.js. Strong in low overhead and plugin architecture, and works well with JSON Schema-based validation and serialization.',
     bestFor:
-      'パフォーマンスを重視するAPIサーバー、型安全なバリデーションが必要な場合、Expressからの移行先。',
+      'API servers where performance is critical, when type-safe validation is needed, when you want a lighter implementation than Express.',
     alternatives: [
       {
         label: 'Express',
         slug: 'express',
-        vs: 'Expressは学習リソースが豊富でミドルウェアのエコシステムが広い。FastifyはExpressより2〜4倍高速で型安全性も高い。',
+        vs: 'Express is easy to get started with and has many learning resources. Fastify\'s strengths are low overhead and schema-driven design.',
       },
     ],
   },
+
   // ── ORM / DB ─────────────────────────────────────────────────
   {
     label: 'Prisma',
     slug: 'prisma',
     role: 'ORM',
     description:
-      '型安全なNode.js/TypeScript向けORM。`schema.prisma`ファイルでDBスキーマを定義すると、TypeScriptの型と`PrismaClient`が自動生成される。マイグレーション管理も担う。',
+      'A type-safe ORM for Node.js / TypeScript. Define your DB schema in `schema.prisma` and TypeScript types with a Prisma Client are auto-generated. Also handles migration management.',
     bestFor:
-      'TypeScriptプロジェクトでDBアクセスに型安全性が欲しい場合、スキーマファーストでDB設計をしたい場合、マイグレーションをコードで管理したい場合。',
+      'When you want type safety for DB access in TypeScript projects, when you want schema-first DB design, or when you want to manage migrations in code.',
     alternatives: [
       {
         label: 'Drizzle',
         slug: 'drizzle',
-        vs: 'PrismaよりSQL寄りの書き方で軽量。バンドルサイズが小さくEdge Runtimeでも動く。Prismaより柔軟なクエリが書けるがスキーマ定義は冗長になりやすい。',
+        vs: 'Drizzle uses a more SQL-like syntax and is lightweight. Also easier to handle in serverless/edge environments. Prisma excels in type generation and schema management experience.',
       },
       {
         label: 'Supabase',
         slug: 'supabase',
-        vs: 'SupabaseはBaaS（Backend as a Service）でORMではない。DB管理・認証・ストレージが統合されており設定なしで始められる。Prismaより抽象度が高くカスタマイズ性は低い。',
+        vs: 'Supabase is a BaaS, not an ORM. Great if you want auth, storage, and more all bundled together. Prisma offers more flexibility for custom designs.',
       },
     ],
   },
@@ -407,35 +429,35 @@ export const STACK_REFERENCE: StackEntry[] = [
     slug: 'drizzle',
     role: 'ORM',
     description:
-      'TypeScriptファーストの軽量ORM。SQLに近い構文でクエリを書けるため、生SQLを知っている人には馴染みやすい。バンドルサイズが小さくCloudflare WorkersなどEdge Runtimeでも動作する。',
+      'A lightweight TypeScript-first ORM. You can write queries in SQL-like syntax, making it approachable for those familiar with raw SQL. Small bundle size and works well with serverless/edge configurations.',
     bestFor:
-      'SQLに慣れていてORMに過度な抽象化を求めない場合、Edge Runtime（Cloudflare Workers等）でのDB接続、Prismaより軽量なソリューションを求める場合。',
+      'When you know SQL and don\'t need heavy ORM abstraction, DB connections in Edge Runtime, or when you want a lighter solution than Prisma.',
     alternatives: [
       {
         label: 'Prisma',
         slug: 'prisma',
-        vs: 'Prismaはスキーマファイルからの型自動生成とマイグレーション管理が強力。DrizzleよりDevExが洗練されているが、バンドルサイズが大きくEdge非対応。',
+        vs: 'Prisma has powerful schema-driven type generation and migration management. Drizzle is lighter and closer to SQL.',
       },
     ],
   },
   {
     label: 'Supabase',
     slug: 'supabase',
-    role: 'BaaS (Backend as a Service)',
+    role: 'BaaS',
     description:
-      'PostgreSQLをベースにしたオープンソースのBaaS。DB・認証・ストレージ・リアルタイム・Edge Functionsが統合されており、バックエンドをほぼ自前で書かずに構築できる。Firebase のオープンソース代替として知られる。',
+      'A development platform centered on PostgreSQL, integrating authentication, storage, Realtime, Edge Functions, and APIs. Lets you quickly assemble backend functionality starting from the database.',
     bestFor:
-      'バックエンドコードを最小化したい場合、認証とDBを素早くセットアップしたい場合、リアルタイム機能が必要な場合。AIコード生成との相性が良い。',
+      'When you want to minimize backend code, when you want to quickly set up auth and a database, or when you need real-time features. Also works well with AI code generation.',
     alternatives: [
       {
         label: 'Prisma',
         slug: 'prisma',
-        vs: 'PrismaはORM専用で自前のDBサーバーと組み合わせて使う。Supabaseより柔軟なDB構成が可能だがインフラ管理が必要。',
+        vs: 'Prisma is ORM-only, used in combination with your own DB and backend setup. Supabase provides auth, storage, and more in one integrated platform.',
       },
       {
         label: 'Drizzle',
         slug: 'drizzle',
-        vs: 'DrizzleもSupabaseのDBに接続して使えるため組み合わせることも多い。SupabaseはDB以外のBaaS機能（認証・ストレージ）が一体化している点が違い。',
+        vs: 'Drizzle is often used to connect to Supabase\'s Postgres. Supabase is the full BaaS, Drizzle is the DB access layer.',
       },
     ],
   },
@@ -446,9 +468,17 @@ export function getStackEntry(slug: string): StackEntry | undefined {
 }
 
 export function labelToSlug(label: string): string {
-  return label.toLowerCase().replace(/\./g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  return label
+    .trim()
+    .toLowerCase()
+    .replace(/\./g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
 }
 
 export function getStackByLabel(label: string): StackEntry | undefined {
-  return STACK_REFERENCE.find(s => s.label === label)
+  const normalized = labelToSlug(label)
+  return STACK_REFERENCE.find(
+    s => s.label === label || s.slug === normalized || labelToSlug(s.label) === normalized
+  )
 }
