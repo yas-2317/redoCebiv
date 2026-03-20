@@ -147,65 +147,8 @@ export default async function HomePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* 上段 3列: Stats | Activity chart | What you've got back */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'stretch' }}>
-
-        {/* Stats 2×3 grid */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: '100%' }}>
-            {[
-              { Icon: FolderOpen, label: 'Projects',   value: totalProjects,   i: 0 },
-              { Icon: Layers,     label: 'Features',   value: totalFeatures,   i: 1 },
-              { Icon: Search,     label: 'Traces',     value: totalTraces,     i: 2 },
-              { Icon: Trophy,     label: 'Challenges', value: totalChallenges, i: 3 },
-            ].map(({ Icon, label, value, i }) => (
-              <div
-                key={label}
-                style={{
-                  padding: '16px 18px',
-                  borderTop: i >= 2 ? '1px solid #f3f4f6' : undefined,
-                  borderLeft: i % 2 === 1 ? '1px solid #f3f4f6' : undefined,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
-                  <Icon size={13} color="#9ca3af" />
-                  <span style={{ fontSize: '13px', color: '#374151' }}>{label}</span>
-                </div>
-                <p style={{ fontSize: '26px', fontWeight: 700, color: '#111827', lineHeight: 1, textAlign: 'right' }}>
-                  {value}
-                </p>
-              </div>
-            ))}
-
-            {/* Credits — フル幅、バー + plan */}
-            <div style={{ gridColumn: '1 / -1', padding: '14px 18px', borderTop: '1px solid #f3f4f6', background: '#fafafa' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Zap size={13} color="#1d6187" />
-                  <span style={{ fontSize: '13px', color: '#374151' }}>Credits left</span>
-                  <span style={{
-                    fontSize: '10px', fontWeight: 600, color: '#1d6187',
-                    background: '#e2eef5', border: '1px solid #97bbd0',
-                    borderRadius: '4px', padding: '1px 5px', marginLeft: '4px',
-                  }}>
-                    {planLabel}
-                  </span>
-                </div>
-                <span style={{ fontSize: '18px', fontWeight: 700, color: '#1d6187', lineHeight: 1 }}>
-                  {creditBalance}
-                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#9ca3af', marginLeft: '3px' }}>/ {planMax} charts</span>
-                </span>
-              </div>
-              <div style={{ height: '5px', background: '#97bbd0', borderRadius: '99px', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', width: `${creditPct}%`,
-                  background: creditBalance < planMax * 0.2 ? '#ef4444' : '#1d6187',
-                  borderRadius: '99px',
-                }} />
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* 上段 3列: Activity | What you've got back | Your footprint */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', alignItems: 'stretch' }}>
 
         {/* Activity chart */}
         <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '18px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
@@ -298,88 +241,146 @@ export default async function HomePage() {
           )}
         </div>
 
+        {/* Your footprint */}
+        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
+          <div className="card-header">
+            <span className="card-header-title">Your footprint</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+            {[
+              { Icon: FolderOpen, label: 'Projects',   value: totalProjects,   i: 0 },
+              { Icon: Layers,     label: 'Features',   value: totalFeatures,   i: 1 },
+              { Icon: Search,     label: 'Traces',     value: totalTraces,     i: 2 },
+              { Icon: Trophy,     label: 'Challenges', value: totalChallenges, i: 3 },
+            ].map(({ Icon, label, value, i }) => (
+              <div
+                key={label}
+                style={{
+                  padding: '16px 18px',
+                  borderTop: i >= 2 ? '1px solid #f3f4f6' : undefined,
+                  borderLeft: i % 2 === 1 ? '1px solid #f3f4f6' : undefined,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
+                  <Icon size={13} color="#9ca3af" />
+                  <span style={{ fontSize: '13px', color: '#374151' }}>{label}</span>
+                </div>
+                <p style={{ fontSize: '26px', fontWeight: 700, color: '#111827', lineHeight: 1, textAlign: 'right' }}>
+                  {value}
+                </p>
+              </div>
+            ))}
+
+            {/* Credits — フル幅、バー + plan */}
+            <div style={{ gridColumn: '1 / -1', padding: '14px 18px', borderTop: '1px solid #f3f4f6', background: '#fafafa' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Zap size={13} color="#1d6187" />
+                  <span style={{ fontSize: '13px', color: '#374151' }}>Credits left</span>
+                  <span style={{
+                    fontSize: '10px', fontWeight: 600, color: '#1d6187',
+                    background: '#e2eef5', border: '1px solid #97bbd0',
+                    borderRadius: '4px', padding: '1px 5px', marginLeft: '4px',
+                  }}>
+                    {planLabel}
+                  </span>
+                </div>
+                <span style={{ fontSize: '18px', fontWeight: 700, color: '#1d6187', lineHeight: 1 }}>
+                  {creditBalance}
+                  <span style={{ fontSize: '11px', fontWeight: 400, color: '#9ca3af', marginLeft: '3px' }}>/ {planMax} charts</span>
+                </span>
+              </div>
+              <div style={{ height: '5px', background: '#97bbd0', borderRadius: '99px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', width: `${creditPct}%`,
+                  background: creditBalance < planMax * 0.2 ? '#ef4444' : '#1d6187',
+                  borderRadius: '99px',
+                }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      {/* 下段: 1枚パネル（Your projects | Recent activity） */}
-      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-        <div className="dashboard-main-grid" style={{ gap: 0 }}>
+      {/* 下段: 2列グリッド（Your projects | Recent activity） */}
+      <div className="dashboard-main-grid">
 
-          {/* Your projects */}
-          <div>
-            <div className="card-header">
-              <span className="card-header-title">Your projects</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {projects.length > 3 && (
-                  <Link href="/projects" className="card-header-action">
-                    All projects ({projects.length}) →
-                  </Link>
-                )}
-                <Link href="/projects/new" className="card-header-action">
-                  + New
+        {/* Your projects */}
+        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+          <div className="card-header">
+            <span className="card-header-title">Your projects</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {projects.length > 3 && (
+                <Link href="/projects" className="card-header-action">
+                  All projects ({projects.length}) →
                 </Link>
-              </div>
+              )}
+              <Link href="/projects/new" className="card-header-action">
+                + New
+              </Link>
             </div>
-            <div style={{ padding: '20px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', alignItems: 'stretch' }}>
-                {recentProjectsWithProgress.map(p => (
-                  <ProjectCard
-                    key={p.id}
-                    id={p.id}
-                    name={p.name}
-                    status={p.status}
-                    stack={p.stack ?? []}
-                    fileCount={p.file_count}
-                    createdAt={p.created_at}
-                    traceCount={p.traceCount}
-                    usecaseCount={p.usecaseCount}
-                    solvedCount={p.solvedCount}
-                    challengeCount={p.challengeCount}
-                  />
+          </div>
+          <div style={{ padding: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', alignItems: 'stretch' }}>
+              {recentProjectsWithProgress.map(p => (
+                <ProjectCard
+                  key={p.id}
+                  id={p.id}
+                  name={p.name}
+                  status={p.status}
+                  stack={p.stack ?? []}
+                  fileCount={p.file_count}
+                  createdAt={p.created_at}
+                  traceCount={p.traceCount}
+                  usecaseCount={p.usecaseCount}
+                  solvedCount={p.solvedCount}
+                  challengeCount={p.challengeCount}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent activity */}
+        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+          <div className="card-header">
+            <span className="card-header-title">Recent activity</span>
+          </div>
+          <div style={{ padding: '20px' }}>
+            {activities.length === 0 ? (
+              <p style={{ fontSize: '13px', color: '#9ca3af' }}>No activity yet.</p>
+            ) : (
+              <div>
+                {activities.map((a, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 0',
+                      borderTop: i > 0 ? '1px solid #f3f4f6' : undefined,
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <span style={{ fontSize: '16px', lineHeight: 1, flexShrink: 0 }}>{a.icon}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: '13px', color: '#1f2937', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.label}</p>
+                        {a.projectName && (
+                          <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{a.projectName}</p>
+                        )}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#9ca3af', flexShrink: 0 }}>
+                      {formatRelative(a.createdAt)}
+                    </span>
+                  </div>
                 ))}
               </div>
-            </div>
+            )}
           </div>
-
-          {/* Recent activity */}
-          <div style={{ borderLeft: '1px solid #e5e7eb' }}>
-            <div className="card-header">
-              <span className="card-header-title">Recent activity</span>
-            </div>
-            <div style={{ padding: '20px' }}>
-              {activities.length === 0 ? (
-                <p style={{ fontSize: '13px', color: '#9ca3af' }}>No activity yet.</p>
-              ) : (
-                <div>
-                  {activities.map((a, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '10px 0',
-                        borderTop: i > 0 ? '1px solid #f3f4f6' : undefined,
-                        gap: '12px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                        <span style={{ fontSize: '16px', lineHeight: 1, flexShrink: 0 }}>{a.icon}</span>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: '13px', color: '#1f2937', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.label}</p>
-                          {a.projectName && (
-                            <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{a.projectName}</p>
-                          )}
-                        </div>
-                      </div>
-                      <span style={{ fontSize: '11px', color: '#9ca3af', flexShrink: 0 }}>
-                        {formatRelative(a.createdAt)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
         </div>
+
       </div>
     </div>
   )
