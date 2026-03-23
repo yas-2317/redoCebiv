@@ -1,28 +1,34 @@
 import Link from 'next/link'
+import { FolderOpen, Layers, Map as MapIcon, Search, Trophy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { FolderOpen, Layers, Search, Map, Trophy } from 'lucide-react'
+import { getUserProgress } from '@/lib/progress/service'
 import ProjectCard from '@/components/project/ProjectCard'
-import { enrichProjectsWithProgress } from './projects/page'
+import {
+  ActivityList,
+  HeroCard,
+  MetricCard,
+  PageIntro,
+  SectionHeader,
+  StatChip,
+  SurfaceCard,
+} from '@/components/dashboard/primitives'
+import { FootprintList } from '@/components/dashboard/FootprintList'
+import { formatRelative, getActivityMeta, pluralize } from '@/components/dashboard/helpers'
 
-const GRADE_ICON: Record<string, string> = {
-  self: '✅',
-  with_hint: '🟡',
-  missed: '❌',
-}
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export default async function HomePage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const progress = await getUserProgress(user!.id)
+  const { summary, projectRows } = progress
 
-  const [
-    { data: allProjects },
-    { data: submissions },
-    { data: traces },
-    { data: transactions },
-  ] = await Promise.all([
+  const [{ data: allProjects }, { data: submissions }, { data: traces }, { data: transactions }] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, name, status, stack, file_count, created_at')
+      .select('id, name, status, stack, file_count, created_at, last_activity_at')
       .eq('user_id', user!.id)
       .order('last_activity_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false }),
@@ -45,97 +51,97 @@ export default async function HomePage() {
   ])
 
   const projects = allProjects ?? []
-  const recentProjects = projects.slice(0, 3)
-  const recentProjectsWithProgress = await enrichProjectsWithProgress(supabase, user!.id, recentProjects)
+  const recentProjects = projects.slice(0, 4)
+  const progressByProjectId = new Map(projectRows.map((row) => [row.projectId, row]))
+  const recentProjectsWithProgress = recentProjects.map((project) => {
+    const progressRow = progressByProjectId.get(project.id)
 
-  const readyProjects = projects.filter(p => p.status === 'ready')
-  const allWithProgress = await enrichProjectsWithProgress(supabase, user!.id, readyProjects)
-  const totalFeatures = allWithProgress.reduce((s, p) => s + (p.usecaseCount ?? 0), 0)
-  const totalTraces = allWithProgress.reduce((s, p) => s + (p.traceCount ?? 0), 0)
-  const totalProjects = readyProjects.length
-  const totalChallenges = submissions?.length ?? 0
-  const chartsLogged = (transactions ?? []).reduce((s, t) => s + Math.abs(t.amount), 0)
-
-  // Grade counts
-  const gradeCount = { self: 0, with_hint: 0, missed: 0 }
-  for (const s of submissions ?? []) {
-    gradeCount[s.grade as keyof typeof gradeCount]++
-  }
-  const solvePct = totalChallenges > 0 ? Math.round((gradeCount.self / totalChallenges) * 100) : 0
-
-  // 過去7日間アクティビティ集計
-  const chartDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (6 - i))
-    d.setHours(0, 0, 0, 0)
-    return d
+    return {
+      ...project,
+      traceCount: progressRow?.traceCount ?? 0,
+      usecaseCount: progressRow?.usecaseCount ?? 0,
+      solvedCount: progressRow?.solvedCount ?? 0,
+      challengeCount: progressRow?.challengeCount ?? 0,
+    }
   })
-  const chartData = chartDays.map(day => {
-    const next = new Date(day); next.setDate(next.getDate() + 1)
-    const t = (traces ?? []).filter(x => { const d = new Date(x.generated_at); return d >= day && d < next }).length
-    const c = (submissions ?? []).filter(x => { const d = new Date(x.created_at); return d >= day && d < next }).length
-    return { day, traces: t, challenges: c, total: t + c }
+
+  const chartsLogged = (transactions ?? []).reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0)
+
+  const chartDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date()
+    date.setDate(date.getDate() - (6 - index))
+    date.setHours(0, 0, 0, 0)
+    return date
   })
-  const chartMax = Math.max(...chartData.map(d => d.total), 1)
 
-  // 週間・月間統計
-  const now = new Date()
-  const msDay = 86_400_000
-  const thisWeekTotal = chartData.reduce((s, d) => s + d.total, 0)
-  const lastWeekTotal = (() => {
-    const start = new Date(now.getTime() - 14 * msDay)
-    const end   = new Date(now.getTime() -  7 * msDay)
-    const t = (traces ?? []).filter(x => { const d = new Date(x.generated_at); return d >= start && d < end }).length
-    const c = (submissions ?? []).filter(x => { const d = new Date(x.created_at); return d >= start && d < end }).length
-    return t + c
-  })()
-  const monthlyTotal = (() => {
-    const start = new Date(now.getTime() - 30 * msDay)
-    const t = (traces ?? []).filter(x => new Date(x.generated_at) >= start).length
-    const c = (submissions ?? []).filter(x => new Date(x.created_at) >= start).length
-    return t + c
-  })()
-  const weekDiff = thisWeekTotal - lastWeekTotal
-  const weekDiffPct = lastWeekTotal > 0 ? Math.round(Math.abs(weekDiff) / lastWeekTotal * 100) : null
+  const chartData = chartDays.map((day) => {
+    const next = new Date(day)
+    next.setDate(next.getDate() + 1)
+    const traceTotal = (traces ?? []).filter((item) => {
+      const timestamp = new Date(item.generated_at)
+      return timestamp >= day && timestamp < next
+    }).length
+    const challengeTotal = (submissions ?? []).filter((item) => {
+      const timestamp = new Date(item.created_at)
+      return timestamp >= day && timestamp < next
+    }).length
 
-  type ActivityItem = { icon: string; label: string; projectName: string; createdAt: string }
+    return { day, traces: traceTotal, challenges: challengeTotal, total: traceTotal + challengeTotal }
+  })
 
-  const activities: ActivityItem[] = [
-    ...(submissions ?? []).map(s => ({
-      icon: GRADE_ICON[s.grade] ?? '❓',
-      label: (s.challenges as unknown as { title: string } | null)?.title ?? 'Challenge',
-      projectName: ((s.challenges as unknown as { projects: { name: string; id: string } | null } | null)?.projects)?.name ?? '',
-      createdAt: s.created_at,
-    })),
-    ...(traces ?? []).map(t => ({
-      icon: '🔍',
-      label: (t.usecases as unknown as { name: string } | null)?.name ?? 'Trace',
-      projectName: ((t.usecases as unknown as { projects: { name: string; id: string } | null } | null)?.projects)?.name ?? '',
-      createdAt: t.generated_at,
+  const thisWeekTraces = chartData.reduce((sum, day) => sum + day.traces, 0)
+  const thisWeekChallenges = chartData.reduce((sum, day) => sum + day.challenges, 0)
+  const thisWeekRecovered = (submissions ?? []).filter((submission) => {
+    const createdAt = new Date(submission.created_at)
+    const threshold = new Date()
+    threshold.setDate(threshold.getDate() - 7)
+    return createdAt >= threshold && submission.grade === 'self'
+  }).length
+
+  const latestReadyProject = projects.find((project) => project.status === 'ready') ?? projects[0]
+
+  const activities = [
+    ...(submissions ?? []).map((submission) => {
+      const meta = getActivityMeta(submission.grade)
+      return {
+        ...meta,
+        title: (submission.challenges as unknown as { title: string } | null)?.title ?? 'Challenge',
+        projectName:
+          ((submission.challenges as unknown as { projects: { name: string } | null } | null)?.projects)?.name ?? '',
+        timestamp: formatRelative(submission.created_at),
+        createdAt: submission.created_at,
+      }
+    }),
+    ...(traces ?? []).map((trace) => ({
+      ...getActivityMeta(),
+      title: (trace.usecases as unknown as { name: string } | null)?.name ?? 'Trace',
+      projectName: ((trace.usecases as unknown as { projects: { name: string } | null } | null)?.projects)?.name ?? '',
+      timestamp: formatRelative(trace.generated_at),
+      createdAt: trace.generated_at,
     })),
   ]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 10)
+    .slice(0, 8)
+    .map((item) => ({
+      badgeLabel: item.badgeLabel,
+      badgeTone: item.badgeTone,
+      title: item.title,
+      projectName: item.projectName,
+      timestamp: item.timestamp,
+    }))
 
   if (projects.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '80px', paddingBottom: '80px', textAlign: 'center' }}>
+      <div className="flex flex-col items-center py-24 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="" style={{ height: '56px', width: 'auto', marginBottom: '20px' }} />
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
-          You sparked it. Now let&apos;s trace it back to you.
-        </h1>
-        <p style={{ fontSize: '15px', color: '#6b7280', maxWidth: '400px', lineHeight: '1.6', marginBottom: '28px' }}>
-          Upload what you built. We&apos;ll work backwards until it&apos;s truly yours.
+        <img src="/logo.png" alt="" className="mb-6 h-14 w-auto dark:invert" />
+        <h1 className="quiet-title max-w-2xl text-center">You sparked it. Now let&apos;s trace it back to you.</h1>
+        <p className="quiet-body mt-4 max-w-lg">
+          Upload what you built. We&apos;ll work backwards until it feels legible, navigable, and yours again.
         </p>
         <Link
           href="/projects/new"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '10px 20px', borderRadius: '8px',
-            background: '#1d6187', color: 'white',
-            fontSize: '14px', fontWeight: 500, textDecoration: 'none',
-          }}
+          className="mt-8 rounded-full bg-[var(--app-brand)] px-6 py-3 text-sm font-medium text-white transition hover:bg-[var(--app-brand)]/92"
         >
           + New project
         </Link>
@@ -144,300 +150,146 @@ export default async function HomePage() {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', alignItems: 'stretch' }}>
+    <div className="quiet-grid gap-8">
+      <PageIntro
+        eyebrow="Home"
+        title="A quiet briefing for what comes next."
+        description="Your dashboard should answer three things quickly: what to do next, how much you have already taken back, and where your understanding is growing."
+      />
 
-      {/* 上段 3列: Activity | What you've got back | Your footprint */}
-      <>
-
-        {/* Activity chart */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-          <div className="card-header">
-            <span className="card-header-title">Activity</span>
+      <HeroCard
+        eyebrow="Today’s recovery"
+        title="You&apos;re getting it back."
+        description={`This week, you completed ${pluralize(thisWeekTraces, 'trace')} and attempted ${pluralize(thisWeekChallenges, 'challenge')}.`}
+        note="AI wrote it first. You understand it now."
+        stats={[
+          { label: 'active projects', value: `${projects.filter((project) => project.status === 'ready').length}` },
+          { label: 'concepts recovered', value: `${summary.selfSolvedChallenges}` },
+        ]}
+        primaryAction={{
+          href: latestReadyProject?.status === 'ready' ? `/projects/${latestReadyProject.id}` : '/projects',
+          label: 'Continue tracing',
+        }}
+        secondaryAction={{
+          href: latestReadyProject ? `/projects/${latestReadyProject.id}` : '/projects',
+          label: 'Open latest project',
+        }}
+        aside={
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-[var(--app-text)]">
+              {projects.filter((project) => project.status === 'ready').length} active projects
+            </p>
+            <p className="quiet-meta">The dashboard is strongest when it keeps your next step close to hand.</p>
           </div>
-          <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+        }
+      />
 
-          {/* Stats row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
-            {[
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard label="Got it back" helper="Solved on your own" value={summary.selfSolvedChallenges} tone="success" prominent />
+        <MetricCard label="Needed a nudge" helper="Solved with a hint" value={summary.hintSolvedChallenges} tone="hint" />
+        <MetricCard label="Not yet" helper="Still unclear" value={summary.missedChallenges} tone="missed" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+        <SurfaceCard>
+          <SectionHeader title="This week" description="A simple reading of the rhythm you kept." />
+          <div className="grid gap-4 md:grid-cols-3">
+            <StatChip icon={Search} label="Traces completed" value={thisWeekTraces} />
+            <StatChip icon={Trophy} label="Challenges attempted" value={thisWeekChallenges} />
+            <StatChip icon={Layers} label="Recovered count" value={thisWeekRecovered} />
+          </div>
+          <div className="mt-6">
+            <WeeklyBars data={chartData} />
+          </div>
+        </SurfaceCard>
+
+        <SurfaceCard>
+          <SectionHeader title="Your footprint" description="A steady account of how much ground you have covered." />
+          <FootprintList
+            entries={[
               {
-                label: 'This week',
-                value: thisWeekTotal,
-                sub: null,
+                type: 'group',
+                parent: { icon: FolderOpen, label: 'Projects', value: summary.totalProjects, href: '/projects' },
+                children: [
+                  { icon: Layers, label: 'Features', value: summary.totalFeatures },
+                  { icon: Search, label: 'Traces', value: summary.totalTraces },
+                ],
               },
-              {
-                label: 'vs last week',
-                value: weekDiff === 0 ? '—' : `${weekDiff > 0 ? '+' : ''}${weekDiff}`,
-                sub: weekDiffPct != null ? `${weekDiff >= 0 ? '↑' : '↓'}${weekDiffPct}%` : null,
-                color: weekDiff > 0 ? '#16a34a' : weekDiff < 0 ? '#dc2626' : '#9ca3af',
-              },
-              {
-                label: 'Monthly',
-                value: monthlyTotal,
-                sub: null,
-              },
-            ].map(({ label, value, sub, color }) => (
-              <div key={label} style={{ background: '#f9fafb', borderRadius: '8px', padding: '10px 12px' }}>
-                <p style={{ fontSize: '10px', color: '#9ca3af', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '4px' }}>{label}</p>
-                <p style={{ fontSize: '20px', fontWeight: 700, color: color ?? '#111827', lineHeight: 1 }}>{value}</p>
-                {sub && <p style={{ fontSize: '10px', color: color, marginTop: '2px' }}>{sub}</p>}
-              </div>
-            ))}
-          </div>
+              { type: 'item', icon: Trophy, label: 'Challenges', value: summary.totalChallenges, href: '/progress' },
+              { type: 'item', icon: MapIcon, label: 'Charts logged', value: chartsLogged, href: '/settings' },
+            ]}
+          />
+        </SurfaceCard>
+      </div>
 
-          {/* Chart */}
-          <div style={{ marginTop: 'auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', marginBottom: '10px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#6b7280' }}>
-                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: '#1d6187' }} />
-                Traces
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#6b7280' }}>
-                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px', background: '#a5b4fc' }} />
-                Challenges
-              </span>
-            </div>
-            <ActivityChart data={chartData} max={chartMax} />
-          </div>
-          </div>
-        </div>
-
-        {/* What you've got back */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-          <div className="card-header">
-            <span className="card-header-title">What you&apos;ve got back</span>
-          </div>
-          <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-          {totalChallenges === 0 ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '16px 0' }}>
-              <p style={{ fontSize: '24px', marginBottom: '8px' }}>🎯</p>
-              <p style={{ fontSize: '12px', color: '#9ca3af', lineHeight: 1.5 }}>
-                No challenges yet.<br />
-                Start tracing a project<br />to unlock them.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
-                {[
-                  { icon: '✅', label: 'Got it back',    count: gradeCount.self,      color: '#16a34a', bg: '#f0fdf4' },
-                  { icon: '🟡', label: 'Needed a nudge', count: gradeCount.with_hint, color: '#d97706', bg: '#fffbeb' },
-                  { icon: '❌', label: 'Not yet',        count: gradeCount.missed,    color: '#dc2626', bg: '#fef2f2' },
-                ].map(({ icon, label, count, color, bg }) => (
-                  <div key={label} style={{ borderRadius: '8px', padding: '10px 12px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '16px', lineHeight: 1 }}>{icon}</span>
-                      <span style={{ fontSize: '12px', color: '#374151' }}>{label}</span>
-                    </div>
-                    <span style={{ fontSize: '20px', fontWeight: 700, color, lineHeight: 1 }}>{count}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 'auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                  <span style={{ fontSize: '11px', color: '#6b7280' }}>Solved without hints</span>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151' }}>{solvePct}%</span>
-                </div>
-                <div style={{ height: '5px', background: '#f3f4f6', borderRadius: '99px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${solvePct}%`, background: '#16a34a', borderRadius: '99px' }} />
-                </div>
-              </div>
-            </>
-          )}
-          </div>
-        </div>
-
-        {/* Your footprint */}
-        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-          <div className="card-header">
-            <span className="card-header-title">Your footprint</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-
-            {/* Projects (link) */}
-            <Link href="/projects" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #f3f4f6', transition: 'background 0.1s' }} className="footprint-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <FolderOpen size={13} color="#9ca3af" />
-                <span style={{ fontSize: '13px', color: '#374151' }}>Projects</span>
-              </div>
-              <span style={{ fontSize: '22px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>{totalProjects}</span>
+      <section>
+        <SectionHeader
+          title="Continue where you left off"
+          description="A project shelf with the clearest places to resume."
+          action={
+            <Link href="/projects" className="text-sm font-medium text-[var(--app-brand)]">
+              See all
             </Link>
-
-            {/* Features (sub-item, no link) */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px 10px 32px', borderBottom: '1px solid #f9fafb', position: 'relative' }}>
-              <div style={{ position: 'absolute', left: '26px', top: 0, bottom: 0, width: '1px', background: '#e5e7eb' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Layers size={12} color="#d1d5db" />
-                <span style={{ fontSize: '12px', color: '#9ca3af' }}>Features</span>
-              </div>
-              <span style={{ fontSize: '18px', fontWeight: 600, color: '#6b7280', lineHeight: 1 }}>{totalFeatures}</span>
-            </div>
-
-            {/* Traces (sub-item, no link) */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px 10px 32px', borderBottom: '1px solid #f3f4f6', position: 'relative' }}>
-              <div style={{ position: 'absolute', left: '26px', top: 0, bottom: '50%', width: '1px', background: '#e5e7eb' }} />
-              <div style={{ position: 'absolute', left: '26px', top: '50%', width: '8px', height: '1px', background: '#e5e7eb' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Search size={12} color="#d1d5db" />
-                <span style={{ fontSize: '12px', color: '#9ca3af' }}>Traces</span>
-              </div>
-              <span style={{ fontSize: '18px', fontWeight: 600, color: '#6b7280', lineHeight: 1 }}>{totalTraces}</span>
-            </div>
-
-            {/* Challenges (link) */}
-            <Link href="/progress" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #f3f4f6', transition: 'background 0.1s' }} className="footprint-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Trophy size={13} color="#9ca3af" />
-                <span style={{ fontSize: '13px', color: '#374151' }}>Challenges</span>
-              </div>
-              <span style={{ fontSize: '22px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>{totalChallenges}</span>
-            </Link>
-
-            {/* Charts logged (link to /credits) */}
-            <Link href="/credits" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: '#fafafa', marginTop: 'auto', transition: 'background 0.1s' }} className="footprint-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Map size={13} color="#9ca3af" />
-                <span style={{ fontSize: '13px', color: '#374151' }}>Charts logged</span>
-              </div>
-              <span style={{ fontSize: '22px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>{chartsLogged}</span>
-            </Link>
-
-          </div>
+          }
+        />
+        <div className="grid gap-4 xl:grid-cols-2">
+          {recentProjectsWithProgress.map((project) => (
+            <ProjectCard
+              key={project.id}
+              id={project.id}
+              name={project.name}
+              status={project.status}
+              stack={project.stack ?? []}
+              fileCount={project.file_count}
+              createdAt={project.created_at}
+              lastActivityAt={project.last_activity_at}
+              traceCount={project.traceCount}
+              usecaseCount={project.usecaseCount}
+              solvedCount={project.solvedCount}
+              challengeCount={project.challengeCount}
+            />
+          ))}
         </div>
+      </section>
 
-      </>
-
-      {/* Your projects */}
-      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden', gridColumn: 'span 2' }}>
-          <div className="card-header">
-            <span className="card-header-title">Your projects</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {projects.length > 3 && (
-                <Link href="/projects" className="card-header-action">
-                  All projects ({projects.length}) →
-                </Link>
-              )}
-              <Link href="/projects/new" className="card-header-action">
-                + New
-              </Link>
-            </div>
-          </div>
-          <div style={{ padding: '20px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', alignItems: 'stretch' }}>
-              {recentProjectsWithProgress.map(p => (
-                <ProjectCard
-                  key={p.id}
-                  id={p.id}
-                  name={p.name}
-                  status={p.status}
-                  stack={p.stack ?? []}
-                  fileCount={p.file_count}
-                  createdAt={p.created_at}
-                  traceCount={p.traceCount}
-                  usecaseCount={p.usecaseCount}
-                  solvedCount={p.solvedCount}
-                  challengeCount={p.challengeCount}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Recent activity */}
-        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-          <div className="card-header">
-            <span className="card-header-title">Recent activity</span>
-          </div>
-          <div style={{ padding: '20px' }}>
-            {activities.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#9ca3af' }}>No activity yet.</p>
-            ) : (
-              <div>
-                {activities.map((a, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 0',
-                      borderTop: i > 0 ? '1px solid #f3f4f6' : undefined,
-                      gap: '12px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                      <span style={{ fontSize: '16px', lineHeight: 1, flexShrink: 0 }}>{a.icon}</span>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: '13px', color: '#1f2937', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.label}</p>
-                        {a.projectName && (
-                          <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{a.projectName}</p>
-                        )}
-                      </div>
-                    </div>
-                    <span style={{ fontSize: '11px', color: '#9ca3af', flexShrink: 0 }}>
-                      {formatRelative(a.createdAt)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
+      <section>
+        <SectionHeader title="Recent recovery" description="The latest moments that moved your understanding forward." />
+        <ActivityList
+          items={activities}
+          empty={<p className="quiet-meta">No activity yet. Start with a trace and this log will begin to fill in.</p>}
+        />
+      </section>
     </div>
   )
 }
 
-function ActivityChart({ data, max }: {
+function WeeklyBars({
+  data,
+}: {
   data: { day: Date; traces: number; challenges: number; total: number }[]
-  max: number
 }) {
-  const W = 560
-  const H = 96
-  const barW = 32
-  const gap = (W - barW * 7) / 8
-  const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const max = Math.max(...data.map((item) => item.total), 1)
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 24}`} style={{ width: '100%', overflow: 'visible' }}>
-      {[0.25, 0.5, 0.75, 1].map(r => (
-        <line key={r} x1={0} y1={H * (1 - r)} x2={W} y2={H * (1 - r)} stroke="#f3f4f6" strokeWidth={1} />
+    <div className="grid grid-cols-7 gap-3">
+      {data.map((item) => (
+        <div key={item.day.toISOString()} className="flex flex-col items-center gap-3">
+          <div className="flex h-36 w-full items-end justify-center gap-1 rounded-[20px] bg-[rgba(33,79,104,0.05)] px-2 py-3">
+            <div
+              className="w-4 rounded-full bg-[var(--app-brand)]"
+              style={{ height: `${Math.max((item.traces / max) * 100, item.traces > 0 ? 10 : 0)}%` }}
+            />
+            <div
+              className="w-4 rounded-full bg-[var(--app-hint)]/70"
+              style={{ height: `${Math.max((item.challenges / max) * 100, item.challenges > 0 ? 10 : 0)}%` }}
+            />
+          </div>
+          <div className="text-center">
+            <p className="text-xs font-medium text-[var(--app-text)]">{DAY_LABELS[item.day.getDay()]}</p>
+            <p className="quiet-meta mt-1">{item.total}</p>
+          </div>
+        </div>
       ))}
-      {data.map((d, i) => {
-        const x = gap + i * (barW + gap)
-        const traceH = max > 0 ? (d.traces / max) * H : 0
-        const chalH = max > 0 ? (d.challenges / max) * H : 0
-        const label = DAY_LABELS[d.day.getDay()]
-        const isToday = i === 6
-        return (
-          <g key={i}>
-            {traceH > 0 && (
-              <rect x={x} y={H - traceH - chalH} width={barW} height={traceH} rx={4} ry={4} fill="#1d6187" opacity={isToday ? 1 : 0.7} />
-            )}
-            {chalH > 0 && (
-              <rect x={x} y={H - chalH} width={barW} height={chalH} rx={4} ry={4} fill="#a5b4fc" opacity={isToday ? 1 : 0.7} />
-            )}
-            {d.total === 0 && (
-              <rect x={x} y={H - 3} width={barW} height={3} rx={2} ry={2} fill="#f3f4f6" />
-            )}
-            <text x={x + barW / 2} y={H + 16} textAnchor="middle" fontSize={10} fill={isToday ? '#1d6187' : '#9ca3af'} fontWeight={isToday ? 600 : 400}>
-              {label}
-            </text>
-            {d.total > 0 && (
-              <text x={x + barW / 2} y={H - (traceH + chalH) - 5} textAnchor="middle" fontSize={10} fill="#6b7280">
-                {d.total}
-              </text>
-            )}
-          </g>
-        )
-      })}
-    </svg>
+    </div>
   )
-}
-
-function formatRelative(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
 }

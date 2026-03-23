@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -47,9 +47,9 @@ export default function LoginPage() {
       <CardHeader className="text-center pb-2">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="" style={{ height: '48px', width: 'auto' }} />
+          <img src="/logo.png" alt="" className="dark:invert" style={{ height: '48px', width: 'auto' }} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/wordmark.png" alt="redoCebiv" style={{ height: '32px', width: 'auto' }} />
+          <img src="/wordmark.png" alt="redoCebiv" className="dark:invert" style={{ height: '32px', width: 'auto' }} />
         </div>
         <CardDescription>You sparked it. Now let&apos;s trace it back to you.</CardDescription>
       </CardHeader>

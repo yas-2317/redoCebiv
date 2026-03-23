@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { detectStack } from '@/lib/zip'
 import type { ExtractedFile } from '@/lib/zip'
+import { requireAdmin } from '@/lib/auth/require-admin'
 
 // スタック判定に必要なファイル名パターン
 const STACK_RELEVANT_FILES = [
@@ -15,17 +15,17 @@ const STACK_RELEVANT_FILES = [
 ]
 
 export async function POST() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const admin = await requireAdmin()
+  if (!admin.ok) {
+    return admin.response
   }
+  const { supabase, userId } = admin
 
   // stack が空のプロジェクトを取得（自分のプロジェクトのみ）
   const { data: projects } = await supabase
     .from('projects')
     .select('id')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('status', 'ready')
     .eq('stack', '{}')
 

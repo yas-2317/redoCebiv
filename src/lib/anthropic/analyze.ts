@@ -1,4 +1,5 @@
 import { anthropic } from './client'
+import { getStackPromptContext } from './stack-prompts'
 import { extractJson } from './utils'
 
 export interface ExtractedUsecase {
@@ -31,7 +32,8 @@ export interface ExtractedChallenge {
 
 // Pass 1: 網羅性重視で全ページ・画面からユースケースを抽出（件数制限なし）
 async function extractRawUsecases(fileContext: string, projectStack: string[]): Promise<ExtractedUsecase[]> {
-  const appDescription = projectStack.length > 0 ? projectStack.join(' / ') : 'web application'
+  const stackContext = getStackPromptContext(projectStack)
+  const appDescription = stackContext.appDescription
   const stackInstruction = projectStack.length > 0
     ? `\n- For each usecase, add "relevant_stacks": pick 1-2 stacks from [${projectStack.join(', ')}] that are most directly involved. Must be a subset of this list.`
     : '\n- Set "relevant_stacks" to []'
@@ -42,13 +44,14 @@ async function extractRawUsecases(fileContext: string, projectStack: string[]): 
     messages: [
       {
         role: 'user',
-        content: `You are an expert at analyzing ${appDescription} code. Read the following codebase and extract ALL use cases from the perspective of "what the user wants to do".
+        content: `You are an expert at analyzing ${appDescription}. Read the following codebase and extract ALL use cases from the perspective of "what the user wants to do".
 
 Rules:
 - Express use cases as user action goals (in the form "do X")
 - Only include UI-event-driven use cases (exclude internal processes only)
 - Ensure coverage: include at least one use case from each distinct page or screen found in the codebase
-- It is OK to include similar or overlapping items at this stage — deduplication happens later${stackInstruction}
+- It is OK to include similar or overlapping items at this stage — deduplication happens later
+- ${stackContext.usecaseGuidance}${stackInstruction}
 
 Output format (JSON only, no explanation or \`\`\` before/after):
 {
@@ -136,7 +139,9 @@ export async function generateChallenges(
   usecases: ExtractedUsecase[],
   projectStack: string[] = []
 ): Promise<ExtractedChallenge[]> {
-  const appDescription = projectStack.length > 0 ? projectStack.join(' / ') : 'web application'
+  const stackContext = getStackPromptContext(projectStack)
+  const appDescription = stackContext.appDescription
+  const examples = stackContext.examples
   const usecaseSummary = usecases
     .map((uc, i) => `${i + 1}. ${uc.name}: ${uc.description}`)
     .join('\n')
@@ -154,7 +159,7 @@ export async function generateChallenges(
     messages: [
       {
         role: 'user',
-        content: `Generate ${challengeCount} mini coding challenges for beginners based on this ${appDescription} app.
+        content: `Generate ${challengeCount} mini coding challenges for beginners based on this ${appDescription}.
 
 Difficulty distribution (5 levels):
 - difficulty 1 (file_selection, 1 file, file name gives it away): ${d1} challenges
@@ -164,71 +169,13 @@ Difficulty distribution (5 levels):
 - difficulty 5 (code_choice, choose the correct fix): ${d5} challenges
 
 For difficulty 1-3 use format "file_selection". For difficulty 4-5 use format "code_choice".
+${stackContext.challengeGuidance}
 
 Output format (JSON only, no explanation or \`\`\` before/after):
 {
   "challenges": [
-    {
-      "title": "Disable the add button when input is empty",
-      "description": "Prevent the add button from being clickable when the input is empty",
-      "type": "validation",
-      "difficulty": 2,
-      "format": "file_selection",
-      "answer": {
-        "correct_files": ["components/AddTaskForm.tsx"],
-        "correct_code": "disabled={text.trim() === ''}",
-        "explanation": "The button's disabled prop should check if the input is empty",
-        "change_type": "Add validation",
-        "related_examples": []
-      },
-      "hint": "Check the props of the button component"
-    },
-    {
-      "title": "Find the broken disable logic",
-      "description": "This button should be disabled when loading, but something is wrong. Which code is the problem?",
-      "type": "condition",
-      "difficulty": 4,
-      "format": "code_choice",
-      "answer": {
-        "correct_files": ["components/SubmitButton.tsx"],
-        "current_code": null,
-        "choices": [
-          "const label = isLoading ? 'Submitting...' : 'Submit'",
-          "const disabled = isLoading",
-          "onClick={() => handleSubmit(data)}",
-          "type=\"submit\""
-        ],
-        "correct_index": 1,
-        "correct_code": "const disabled = isLoading",
-        "explanation": "The disabled logic only checks isLoading but should also check if input is empty",
-        "change_type": "Fix condition",
-        "related_examples": []
-      },
-      "hint": "Look for where the disabled state is defined"
-    },
-    {
-      "title": "Fix the disable condition",
-      "description": "The button should be disabled when loading OR when input is empty. Choose the correct code.",
-      "type": "condition",
-      "difficulty": 5,
-      "format": "code_choice",
-      "answer": {
-        "correct_files": ["components/SubmitButton.tsx"],
-        "current_code": "const disabled = isLoading",
-        "choices": [
-          "disabled={isLoading}",
-          "disabled={isLoading || input.trim() === ''}",
-          "disabled={!isLoading && input === ''}",
-          "disabled={isLoading && input.trim() === ''}"
-        ],
-        "correct_index": 1,
-        "correct_code": "disabled={isLoading || input.trim() === ''}",
-        "explanation": "Both conditions must be checked with || so either one disables the button",
-        "change_type": "Fix condition",
-        "related_examples": []
-      },
-      "hint": "Think about what || vs && means for two conditions"
-    }
+${examples.challengeFileSelectionExample},
+${examples.challengeCodeChoiceExample}
   ]
 }
 
@@ -238,6 +185,7 @@ Rules for code_choice:
 - Wrong choices must be plausible but subtly incorrect (wrong operator, missing edge case, inverted logic)
 - difficulty 4: current_code is null, choices are snippets from the codebase — only one is the problematic piece
 - difficulty 5: current_code is the "before" snippet, choices are candidate fixes
+- All code examples and explanations must match the detected stack's syntax and terminology
 
 ---
 Use cases:

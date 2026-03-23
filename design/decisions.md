@@ -1,6 +1,6 @@
 # redoCebiv — 設計判断ログ
 
-最終更新: 2026-03-18
+最終更新: 2026-03-20
 
 ---
 
@@ -198,3 +198,122 @@ Supabase Auth で Google OAuth とメール/パスワードの両方を提供す
 - UIの優先順位: Googleボタンを上・目立つ位置、メールは下に配置
 - メール登録時はSupabase標準の確認メール（Resend経由）を送信
 - どちらの方法でも同一のprofileレコードを生成し、クレジット管理は共通化
+
+---
+
+## ADR-009: 多スタック対応では primary stack を明示解決する
+
+**日付**: 2026-03-20
+**状態**: 採用
+
+**背景**:
+対応スタックを Flutter / Swift / Rails / Python / Vue / Svelte 系へ広げる中で、1プロジェクト内で複数 stack が検出されるケースが発生する。file selection と prompt selection が別々の判断をすると、AI の読むファイルと説明文脈がずれる。
+
+**決定**:
+`getPrimaryStack(projectStack)` を導入し、file selection と prompt selection の両方が同じ primary stack を参照する。
+
+**理由**:
+- 複数 stack 混在時の挙動を暗黙ではなく明示できる
+- `selectFilesForAnalysis()` と `getStackPromptContext()` の判断基準を揃えられる
+- 新 stack 追加時の修正箇所が明確になる
+
+**現行優先順位**:
+- Flutter
+- Swift
+- Ruby on Rails
+- Python
+- Vue
+- Nuxt
+- Svelte
+- SvelteKit
+- Next.js
+- React
+- どれにも該当しない場合は `projectStack[0]`
+
+---
+
+## ADR-010: trace / proposal の AI 実行は service に集約し、失敗時は返金補償する
+
+**日付**: 2026-03-20
+**状態**: 採用
+
+**背景**:
+trace と proposal が route / page に分散していると、課金順序、保存失敗時の補償、AI 生成失敗時の返金がずれやすい。実際に、先行課金や返金漏れのリスクが発生していた。
+
+**決定**:
+trace / proposal の業務ロジックを service に集約し、`file確認 -> 課金 -> AI生成 -> 保存 -> 補償` の順序を統一する。
+
+**理由**:
+- correctness を 1 か所で担保できる
+- route / page の責務を薄くできる
+- 保存失敗や AI 失敗の返金補償を一貫して扱える
+
+**補償方針**:
+- AI 生成失敗: 返金する
+- 保存失敗: 返金する
+- trace の UNIQUE 制約違反: 返金後に既存 trace を返す
+
+---
+
+## ADR-011: challenge 採点は無料にする
+
+**日付**: 2026-03-20
+**状態**: 採用
+
+**背景**:
+challenge 採点は redoCebiv の継続利用と学習定着の中心導線であり、
+ここに課金摩擦を置くと提出回数が減ってプロダクト価値が落ちやすい。
+
+**決定**:
+`challenge_grade` のクレジット消費は 0 とする。
+
+**理由**:
+- 課題提出の心理的ハードルを下げたい
+- トレースや proposal に比べて 1 回あたりのコストが軽い
+- 継続的な挑戦回数を増やすことが、プロダクト全体の定着に寄与する
+
+---
+
+## ADR-012: stack 別 progress は primary stack のみに帰属させる
+
+**日付**: 2026-03-20
+**状態**: 採用
+
+**背景**:
+複数 stack を含む project を stack 別 progress に重複計上すると、
+合計値と内訳の整合が崩れやすい。
+
+**決定**:
+stack 別 progress 集計では、各 project を `getPrimaryStack(project.stack)` が返す
+1 つの stack のみに帰属させる。
+
+**理由**:
+- 全体値との整合が取りやすい
+- stack 別集計で重複カウントを避けられる
+- 実装と説明がシンプルになる
+
+---
+
+## ADR-013: project_files のコンテンツ削除は「最終アクセスから30日」に変更する
+
+**日付**: 2026-03-21
+**状態**: 採用
+
+**背景**:
+当初 ADR-003 では ZIP を解析完了後即削除とし、project_files は作成から30日後に削除する方針だった。しかし「作成から30日」では、アクティブに使っているユーザーのファイルも削除される。削除後は新規トレース・変更候補生成が不可になるため、同じプロジェクトを再度使いたい場合に5crの再アップロードが必要になる。これはフリーユーザー（月3〜5cr）には実質的な利用制限になる。
+
+**決定**:
+project_files のコンテンツ削除タイミングを「作成から30日後」→「最終アクセスから30日後」に変更する。
+
+- 削除条件: `projects.last_accessed_at < NOW() - INTERVAL '30 days'`
+- `last_accessed_at` はトレース生成・変更候補生成・課題生成のたびに更新する
+- ZIP は解析完了後即削除（ADR-003 変わらず）
+
+**理由**:
+- アクティブに使っているプロジェクトのファイルが消えない
+- 放置プロジェクトのみ削除されるため、ストレージコストの削減効果は維持できる
+- 5cr の再アップロード壁がフリーユーザーに発生しない
+
+**影響**:
+- `projects` テーブルに `last_accessed_at` カラムの追加が必要
+- Inngest cron job の削除条件を `created_at` → `last_accessed_at` に変更

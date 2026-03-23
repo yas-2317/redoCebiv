@@ -1,5 +1,8 @@
 import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { DeleteProjectButton } from './DeleteProjectButton'
+import { ProgressBarRow, StateBadge } from '@/components/dashboard/primitives'
+import { formatDate, getProjectState } from '@/components/dashboard/helpers'
 
 interface Props {
   id: string
@@ -8,166 +11,109 @@ interface Props {
   stack: string[]
   fileCount: number | null
   createdAt: string
+  lastActivityAt?: string | null
   traceCount?: number
   usecaseCount?: number
   solvedCount?: number
   challengeCount?: number
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
-  ready:     { label: 'Ready',      color: '#16a34a', dot: '#22c55e' },
-  analyzing: { label: 'Analyzing',  color: '#d97706', dot: '#f59e0b' },
-  uploading: { label: 'Uploading',  color: '#2563eb', dot: '#3b82f6' },
-  error:     { label: 'Error',      color: '#dc2626', dot: '#ef4444' },
-}
-
 export default function ProjectCard({
-  id, name, status, stack, fileCount, createdAt,
-  traceCount, usecaseCount, solvedCount, challengeCount,
+  id,
+  name,
+  status,
+  stack,
+  fileCount,
+  createdAt,
+  lastActivityAt,
+  traceCount = 0,
+  usecaseCount = 0,
+  solvedCount = 0,
+  challengeCount = 0,
 }: Props) {
-  const isReady = status === 'ready'
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.analyzing
-  const href = isReady ? `/projects/${id}` : `/projects/${id}/analyzing`
+  const href = status === 'ready' ? `/projects/${id}` : `/projects/${id}/analyzing`
+  const state = getProjectState({
+    status,
+    traceCount,
+    usecaseCount,
+    challengeCount,
+    solvedCount,
+  })
+
+  const hasTraces = usecaseCount > 0
+  const hasChallenges = challengeCount > 0
 
   return (
-    <div className="project-card-wrapper" style={{ position: 'relative', height: '100%' }}>
-    <Link href={href} className="project-card-link" style={{ display: 'flex', height: '100%' }}>
-      <div
-        className="project-card"
-        style={{
-          background: 'white',
-          border: '1px solid #e5e7eb',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          display: 'flex',
-          width: '100%',
-        }}
-      >
-        {/* Left status border */}
-        <div style={{ width: '4px', flexShrink: 0, background: cfg.color }} />
-
-        <div style={{ flex: 1, padding: '16px 18px', display: 'flex', flexDirection: 'column' }}>
-          {/* Title row */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-            <p style={{ fontWeight: 600, fontSize: '14px', color: '#111827', lineHeight: '1.4' }}>
-              {name}
-            </p>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '2px 8px',
-                borderRadius: '9999px',
-                fontSize: '11px',
-                fontWeight: 500,
-                color: cfg.color,
-                background: `${cfg.color}14`,
-                flexShrink: 0,
-              }}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: cfg.dot, display: 'inline-block' }} />
-              {cfg.label}
-            </span>
+    <div className="project-card-wrapper relative h-full">
+      <Link href={href} className="project-card-link flex h-full">
+        <article className="project-card quiet-card flex w-full flex-col rounded-[24px] p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="truncate text-xl font-semibold tracking-[-0.03em] text-[var(--app-text)]">{name}</p>
+              <p className="quiet-body mt-2 text-sm">{state.summary}</p>
+            </div>
+            <StateBadge label={state.label} tone={state.tone} />
           </div>
 
-          {/* Stack badges */}
-          {stack.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
-              {stack.map(s => (
+          {stack.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {stack.map((item) => (
                 <span
-                  key={s}
-                  style={{
-                    padding: '1px 7px',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    fontWeight: 500,
-                    color: '#1d6187',
-                    background: '#e2eef5',
-                    border: '1px solid #97bbd0',
-                  }}
+                  key={item}
+                  className="rounded-full border border-[var(--app-border)] bg-white/80 px-3 py-1 text-xs font-medium text-[var(--app-brand)]"
                 >
-                  {s}
+                  {item}
                 </span>
               ))}
             </div>
-          )}
+          ) : null}
 
-          {/* Meta */}
-          <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '6px' }}>
-            {fileCount != null && `${fileCount} files · `}
-            {new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          </p>
-
-          {/* Progress section — always shown for height consistency */}
-          <div style={{ marginTop: 'auto', paddingTop: '12px' }}>
-            <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {isReady && usecaseCount != null && usecaseCount > 0 ? (
-                <>
-                  <ProgressBar label="Traces" value={traceCount ?? 0} max={usecaseCount} />
-                  {challengeCount != null && challengeCount > 0 && (
-                    <ProgressBar label="Challenges" value={solvedCount ?? 0} max={challengeCount} />
-                  )}
-                </>
-              ) : (
-                <>
-                  <ShimmerBar active={!isReady} />
-                  <ShimmerBar active={!isReady} />
-                </>
-              )}
-            </div>
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--app-muted)]">
+            <span>Last active: {formatDate(lastActivityAt ?? createdAt)}</span>
+            {fileCount != null ? <span>{fileCount} files</span> : null}
           </div>
-        </div>
-      </div>
-    </Link>
-    <div className="card-delete-btn">
-      <DeleteProjectButton projectId={id} />
-    </div>
-    </div>
-  )
-}
 
-function ProgressBar({ label, value, max }: { label: string; value: number; max: number }) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-        <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 500 }}>{label}</span>
-        <span style={{ fontSize: '11px', color: '#9ca3af' }}>{value}/{max}</span>
-      </div>
-      <div style={{ height: '5px', borderRadius: '9999px', background: '#f3f4f6' }}>
-        <div
-          style={{
-            height: '100%',
-            borderRadius: '9999px',
-            background: pct === 100 ? '#16a34a' : '#1d6187',
-            width: `${pct}%`,
-            transition: 'width 0.3s ease',
-          }}
-        />
-      </div>
-    </div>
-  )
-}
+          <div className="mt-6 space-y-4 border-t quiet-divider pt-5">
+            {hasTraces ? (
+              <ProgressBarRow
+                label="Trace progress"
+                helper="Follow the code path"
+                value={traceCount}
+                max={usecaseCount}
+                tone="brand"
+              />
+            ) : (
+              <p className="quiet-meta">A trace will appear once the analysis has settled.</p>
+            )}
 
-function ShimmerBar({ active }: { active: boolean }) {
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-        <div
-          className={active ? 'card-shimmer' : undefined}
-          style={{ height: '10px', width: '48px', borderRadius: '4px', background: '#f3f4f6' }}
-        />
-        <div
-          className={active ? 'card-shimmer' : undefined}
-          style={{ height: '10px', width: '28px', borderRadius: '4px', background: '#f3f4f6' }}
-        />
-      </div>
-      <div style={{ height: '5px', borderRadius: '9999px', background: '#f3f4f6', overflow: 'hidden' }}>
-        <div
-          className={active ? 'card-shimmer' : undefined}
-          style={{ height: '100%', width: '60%', background: '#e5e7eb', borderRadius: '9999px' }}
-        />
+            {hasChallenges ? (
+              <ProgressBarRow
+                label="Challenge progress"
+                helper="Check your understanding"
+                value={solvedCount}
+                max={challengeCount}
+                tone={solvedCount > 0 ? 'success' : 'hint'}
+              />
+            ) : (
+              <p className="quiet-meta">Challenges unlock after you map a feature clearly enough.</p>
+            )}
+          </div>
+
+          <div className="mt-6 flex items-center justify-between border-t quiet-divider pt-5">
+            <div>
+              <p className="quiet-meta">Got it back</p>
+              <p className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-[var(--app-text)]">{solvedCount}</p>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--app-brand)] px-4 py-2 text-sm font-medium text-white">
+              Open project
+              <ArrowRight className="size-4" />
+            </span>
+          </div>
+        </article>
+      </Link>
+
+      <div className="card-delete-btn">
+        <DeleteProjectButton projectId={id} />
       </div>
     </div>
   )

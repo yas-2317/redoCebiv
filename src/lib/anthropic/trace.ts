@@ -1,4 +1,5 @@
 import { anthropic } from './client'
+import { getStackPromptContext } from './stack-prompts'
 import { extractJson } from './utils'
 
 export interface TraceRelatedFile {
@@ -22,22 +23,24 @@ export interface GeneratedTrace {
   explanation: string
 }
 
-const SYSTEM_PROMPT = `You are an expert at reading Next.js / React source code and explaining it clearly to non-engineers.
-When given a use case and project files, identify exactly which files implement it and walk through the flow step by step.
-Focus only on files directly involved in the feature — skip unrelated utilities or config.
-Keep language simple: the person reading this built the app with AI and should immediately recognize what you describe.`
-
 export async function generateTrace(
   usecase: { name: string; description: string },
-  fileContext: string
+  fileContext: string,
+  projectStack: string[] = []
 ): Promise<GeneratedTrace> {
+  const stackContext = getStackPromptContext(projectStack)
+  const example = stackContext.examples.traceExample
   const message = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 2048,
     system: [
       {
         type: 'text',
-        text: SYSTEM_PROMPT,
+        text: `You are an expert at reading ${stackContext.appDescription} source code and explaining it clearly to non-engineers.
+When given a use case and project files, identify exactly which files implement it and walk through the flow step by step.
+Focus only on files directly involved in the feature and skip unrelated utilities or config.
+Keep language simple: the person reading this built the app with AI and should immediately recognize what you describe.
+${stackContext.traceGuidance}`,
         cache_control: { type: 'ephemeral' },
       },
     ],
@@ -56,26 +59,7 @@ export async function generateTrace(
 ${usecase.description ? `Description: ${usecase.description}` : ''}
 
 Output JSON only, no explanation or \`\`\` wrapper:
-{
-  "related_files": [
-    {
-      "path": "components/AddTaskForm.tsx",
-      "role": "Form UI and input state",
-      "keyLines": [18, 24]
-    }
-  ],
-  "flow": [
-    {
-      "step": 1,
-      "label": "Input",
-      "description": "User types into the input field",
-      "file": "components/AddTaskForm.tsx",
-      "line": 18,
-      "snippet": "const [text, setText] = useState('')"
-    }
-  ],
-  "explanation": "You wanted users to add tasks, so the AI built a form that captures input and appends it to the list on submit."
-}
+${example}
 
 Rules:
 - related_files: 2–5 files directly involved in this feature only

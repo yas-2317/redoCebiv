@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { ChevronDown } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function UserMenu({ displayName }: { displayName: string }) {
@@ -12,11 +13,12 @@ export default function UserMenu({ displayName }: { displayName: string }) {
   const [supabase] = useState(() => createClient())
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+    function handleClick(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
         setOpen(false)
       }
     }
+
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
@@ -27,44 +29,32 @@ export default function UserMenu({ displayName }: { displayName: string }) {
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(!open)}
-        className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+        onClick={() => setOpen((prev) => !prev)}
+        className="inline-flex items-center gap-2 rounded-full border border-[var(--app-border)] bg-white/75 px-3 py-2 text-sm text-[var(--app-text)] transition hover:bg-white"
       >
-        {displayName} ▾
+        <span className="max-w-[12rem] truncate">{displayName}</span>
+        <ChevronDown className="size-4 text-[var(--app-muted)]" />
       </button>
-      {open && (
-        <div
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: 'calc(100% + 8px)',
-            minWidth: '140px',
-            background: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            zIndex: 50,
-          }}
-        >
+
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+10px)] z-50 min-w-[180px] rounded-[18px] border border-[var(--app-border)] bg-white/96 p-2 shadow-[0_18px_40px_rgba(29,43,53,0.1)] backdrop-blur-md">
           <Link
             href="/settings"
             onClick={() => setOpen(false)}
-            className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors"
-            style={{ textDecoration: 'none' }}
+            className="block rounded-[12px] px-4 py-3 text-sm text-[var(--app-text)] transition hover:bg-[var(--app-bg-elevated)]"
           >
             Settings
           </Link>
-          <div style={{ height: '1px', background: '#f3f4f6' }} />
           <button
             onClick={handleSignOut}
-            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg transition-colors"
+            className="block w-full rounded-[12px] px-4 py-3 text-left text-sm text-[var(--app-text)] transition hover:bg-[var(--app-bg-elevated)]"
           >
             Sign out
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

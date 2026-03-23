@@ -1,4 +1,5 @@
 import { anthropic } from './client'
+import { getStackPromptContext } from './stack-prompts'
 import { extractJson } from './utils'
 
 export interface ProposalCandidate {
@@ -15,22 +16,24 @@ export interface GeneratedProposal {
   candidates: ProposalCandidate[]
 }
 
-const SYSTEM_PROMPT = `You are an expert at guiding code changes in Next.js / React apps for non-engineers.
-Given a user's change intent and the project files, identify the best 1–3 candidate locations to make the change.
-Be precise: point to the exact file and line, show the current code snippet, and explain clearly why that is the right place.
-Prioritize the most direct location — the one a beginner could find and confidently edit.`
-
 export async function generateProposal(
   intent: string,
-  fileContext: string
+  fileContext: string,
+  projectStack: string[] = []
 ): Promise<GeneratedProposal> {
+  const stackContext = getStackPromptContext(projectStack)
+  const example = stackContext.examples.proposalExample
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system: [
       {
         type: 'text',
-        text: SYSTEM_PROMPT,
+        text: `You are an expert at guiding code changes in ${stackContext.appDescription} for non-engineers.
+Given a user's change intent and the project files, identify the best 1–3 candidate locations to make the change.
+Be precise: point to the exact file and line, show the current code snippet, and explain clearly why that is the right place.
+Prioritize the most direct location that a beginner could find and confidently edit.
+${stackContext.proposalGuidance}`,
         cache_control: { type: 'ephemeral' },
       },
     ],
@@ -48,19 +51,7 @@ export async function generateProposal(
             text: `Change intent: ${intent}
 
 Output JSON only, no explanation or \`\`\` wrapper:
-{
-  "change_type": "validation",
-  "difficulty": 2,
-  "candidates": [
-    {
-      "file": "components/AddTaskForm.tsx",
-      "line": 18,
-      "codeSnippet": "disabled={text.trim() === ''}",
-      "reason": "This line directly controls the button state in the UI — the most straightforward place to adjust input validation",
-      "changeType": "Add validation"
-    }
-  ]
-}
+${example}
 
 change_type: "text" | "condition" | "validation" | "display"
 difficulty: 1 (single line, easy) | 2 (logic change, moderate) | 3 (multiple files, hard)

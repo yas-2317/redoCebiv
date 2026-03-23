@@ -1,16 +1,17 @@
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { StackBadge } from '@/components/stack/StackBadge'
-import { FeatureList } from '@/components/project/FeatureList'
+import { getProjectProgress } from '@/lib/progress/service'
+import { listProjectRecoveryEvents, type RecoveryEventType } from '@/lib/recovery-events/service'
+import type { ChallengeDifficulty } from '@/lib/challenges/types'
+import { ProjectHeader } from '@/components/project/ProjectHeader'
+import { ProjectRecoveryCard } from '@/components/project/ProjectRecoveryCard'
+import { FeatureTraceList, type FeatureTraceItem, type FeatureTraceState } from '@/components/project/FeatureTraceList'
+import { ChallengeList, type ChallengeState, type ProjectChallengeItem } from '@/components/project/ChallengeList'
+import { LearningPathCard } from '@/components/project/LearningPathCard'
+import { RecoveryActivityList } from '@/components/project/RecoveryActivityList'
+import type { ActivityItem } from '@/components/dashboard/primitives'
 
-const DIFFICULTY_STARS: Record<number, string> = { 1: '★☆☆', 2: '★★☆', 3: '★★★' }
-
-const GRADE_ICON: Record<string, string> = {
-  self: '✅',
-  with_hint: '🟡',
-  missed: '❌',
-}
+type ChallengeGrade = 'self' | 'with_hint' | 'missed'
 
 export default async function ProjectPage({
   params,
@@ -19,206 +20,211 @@ export default async function ProjectPage({
 }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const { data: project } = await supabase
     .from('projects')
     .select('id, name, status, stack, file_count, created_at, zip_hash')
     .eq('id', id)
+    .eq('user_id', user.id)
     .single()
 
   if (!project) notFound()
+  if (project.status !== 'ready') redirect(`/projects/${id}/analyzing`)
 
-  const [{ data: usecases }, { data: challenges }, { data: traces }, { data: submissions }] =
-    await Promise.all([
-      supabase
-        .from('usecases')
-        .select('id, name, description, related_file_paths, display_order, category, relevant_stacks')
-        .eq('project_id', id)
-        .order('display_order'),
-      supabase
-        .from('challenges')
-        .select('id, title, type, difficulty')
-        .eq('project_id', id)
-        .eq('status', 'active')
-        .order('difficulty'),
-      supabase
-        .from('traces')
-        .select('usecase_id')
-        .eq('project_zip_hash', project.zip_hash ?? ''),
-      supabase
-        .from('challenge_submissions')
-        .select('challenge_id, grade')
-        .eq('user_id', user!.id)
-        .eq('project_id', id)
-        .order('created_at', { ascending: false }),
-    ])
+  const projectProgress = await getProjectProgress(user.id, id)
+  if (!projectProgress) {
+    throw new Error('PROJECT_PROGRESS_NOT_FOUND')
+  }
 
-  const tracedIds = new Set((traces ?? []).map(t => t.usecase_id))
+  const [{ data: usecases }, { data: challenges }, recoveryEvents] = await Promise.all([
+    supabase
+      .from('usecases')
+      .select('id, name, description, related_file_paths, display_order, category, relevant_stacks')
+      .eq('project_id', id)
+      .order('display_order'),
+    supabase
+      .from('challenges')
+      .select('id, title, type, difficulty, usecase_id, usecases(name, category)')
+      .eq('project_id', id)
+      .eq('status', 'active')
+      .order('difficulty'),
+    listProjectRecoveryEvents({
+      supabase,
+      userId: user.id,
+      projectId: id,
+      limit: 8,
+    }),
+  ])
 
-  const submissionByChallenge: Record<string, string> = {}
-  for (const s of submissions ?? []) {
-    if (!submissionByChallenge[s.challenge_id]) {
-      submissionByChallenge[s.challenge_id] = s.grade
+  const tracedIds = new Set(projectProgress.tracedUsecaseIds ?? [])
+  const submissionByChallenge = projectProgress.challengeGradesById ?? {}
+  const challengeGradesByUsecase = new Map<string, ChallengeGrade[]>()
+
+  for (const challenge of challenges ?? []) {
+    if (!challenge.usecase_id) continue
+    const grade = submissionByChallenge[challenge.id]
+    if (!grade) continue
+    const current = challengeGradesByUsecase.get(challenge.usecase_id) ?? []
+    current.push(grade)
+    challengeGradesByUsecase.set(challenge.usecase_id, current)
+  }
+
+  const featureItems: FeatureTraceItem[] = (usecases ?? []).map((usecase) => {
+    const state = getFeatureTraceState({
+      traced: tracedIds.has(usecase.id),
+      grades: challengeGradesByUsecase.get(usecase.id) ?? [],
+    })
+
+    return {
+      id: usecase.id,
+      name: usecase.name,
+      description: usecase.description,
+      category: usecase.category ?? 'other',
+      relevantStacks: (usecase.relevant_stacks as string[] | null) ?? [],
+      state,
+    }
+  })
+
+  const challengeItems: ProjectChallengeItem[] = (challenges ?? []).map((challenge) => ({
+    id: challenge.id,
+    title: challenge.title,
+    difficulty: challenge.difficulty as ChallengeDifficulty,
+    relatedFeatureName: (challenge.usecases as unknown as { name: string } | null)?.name ?? null,
+    relatedCategory: (challenge.usecases as unknown as { category: string } | null)?.category ?? null,
+    state: getChallengeState(submissionByChallenge[challenge.id]),
+  }))
+
+  const momentum = getMomentumLabel({
+    recentEventCount: recoveryEvents.length,
+    recoveredThisWeek: recoveryEvents.filter((event) => event.event_type === 'challenge_self_solved').length,
+    tracedThisWeek: recoveryEvents.filter((event) => event.event_type === 'trace_generated').length,
+    gotItBackCount: projectProgress.selfSolvedChallenges,
+  })
+
+  const activityItems: ActivityItem[] = recoveryEvents.map((event) => ({
+    ...getActivityPresentation(event.event_type),
+    title: event.title,
+    projectName: event.detail || undefined,
+    timestamp: formatRelative(event.created_at),
+  }))
+
+  return (
+    <div className="quiet-grid gap-8">
+      <ProjectHeader
+        projectId={id}
+        title={project.name}
+        stack={project.stack ?? []}
+        fileCount={project.file_count}
+        description="Understand the codebase by tracing key features and validating your understanding with challenges."
+      />
+
+      <ProjectRecoveryCard
+        tracedCount={projectProgress.traceCount}
+        totalUsecases={projectProgress.usecaseCount}
+        solvedCount={projectProgress.solvedCount}
+        totalChallenges={projectProgress.challengeCount}
+        gotItBackCount={projectProgress.selfSolvedChallenges}
+        momentumLabel={momentum.label}
+        momentumNote={momentum.note}
+      />
+
+      <LearningPathCard />
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.92fr)]">
+        <FeatureTraceList projectId={id} items={featureItems} />
+        <ChallengeList projectId={id} items={challengeItems} />
+      </div>
+
+      <RecoveryActivityList items={activityItems} />
+    </div>
+  )
+}
+
+function getFeatureTraceState({
+  traced,
+  grades,
+}: {
+  traced: boolean
+  grades: ChallengeGrade[]
+}): FeatureTraceState {
+  if (grades.includes('self')) return 'recovered'
+  if (traced && grades.some((grade) => grade === 'with_hint' || grade === 'missed')) return 'in_progress'
+  if (traced) return 'traced'
+  return 'not_started'
+}
+
+function getChallengeState(grade: ChallengeGrade | undefined): ChallengeState {
+  if (!grade) return 'not_started'
+  return grade
+}
+
+function getMomentumLabel({
+  recentEventCount,
+  recoveredThisWeek,
+  tracedThisWeek,
+  gotItBackCount,
+}: {
+  recentEventCount: number
+  recoveredThisWeek: number
+  tracedThisWeek: number
+  gotItBackCount: number
+}) {
+  if (recoveredThisWeek > 0 && recentEventCount >= 3) {
+    return {
+      label: 'steady',
+      note: 'Recent work shows a steady hand. You are turning explanation into ownership.',
     }
   }
 
-  const totalUsecases = usecases?.length ?? 0
-  const tracedCount = (usecases ?? []).filter(uc => tracedIds.has(uc.id)).length
-  const tracePct = totalUsecases > 0 ? Math.round((tracedCount / totalUsecases) * 100) : 0
+  if (tracedThisWeek > 0 || recentEventCount >= 2) {
+    return {
+      label: 'building',
+      note: 'Momentum is building here. The next unfinished feature is a good place to continue.',
+    }
+  }
 
-  const totalChallenges = challenges?.length ?? 0
-  const solvedCount = Object.values(submissionByChallenge).filter(g => g !== 'missed').length
-  const challengePct = totalChallenges > 0 ? Math.round((solvedCount / totalChallenges) * 100) : 0
+  if (gotItBackCount > 0) {
+    return {
+      label: 'quiet',
+      note: 'You already have some ground back. A fresh trace will help you regain the thread.',
+    }
+  }
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+  return {
+    label: 'just beginning',
+    note: 'This project is still early in recovery. Start with the clearest unfinished feature.',
+  }
+}
 
-      {/* Breadcrumb */}
-      <nav style={{ fontSize: '13px', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <Link href="/projects" style={{ color: '#6b7280', textDecoration: 'none' }}>Projects</Link>
-        <span>/</span>
-        <span style={{ color: '#111827' }}>{project.name}</span>
-      </nav>
+function getActivityPresentation(eventType: RecoveryEventType) {
+  switch (eventType) {
+    case 'trace_generated':
+      return { badgeLabel: 'Traced', badgeTone: 'trace' as const }
+    case 'challenge_self_solved':
+      return { badgeLabel: 'Recovered', badgeTone: 'recovered' as const }
+    case 'challenge_solved_with_hint':
+      return { badgeLabel: 'Challenged', badgeTone: 'challenge' as const }
+    case 'challenge_missed':
+      return { badgeLabel: 'Challenged', badgeTone: 'challenge' as const }
+  }
+}
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>{project.name}</h1>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-            {(project.stack ?? []).map((s: string) => (
-              <StackBadge key={s} label={s} />
-            ))}
-            {project.file_count != null && (
-              <span style={{ fontSize: '12px', color: '#9ca3af', marginLeft: '4px' }}>
-                {project.file_count} files
-              </span>
-            )}
-          </div>
-        </div>
-        <Link
-          href={`/projects/${id}/change`}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '9px 18px', borderRadius: '9px',
-            background: '#1d6187', color: 'white',
-            fontSize: '13px', fontWeight: 600,
-            textDecoration: 'none', flexShrink: 0,
-            boxShadow: '0 1px 3px rgba(79,70,229,0.3)',
-          }}
-        >
-          Find changes ▶
-        </Link>
-      </div>
+function formatRelative(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 60) return `${Math.max(mins, 0)}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
 
-      {/* Stats row */}
-      <div className="card">
-        <div className="card-header">
-          <span className="card-header-title">Progress</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-          {[
-            { label: 'Features traced', value: tracedCount, total: totalUsecases, pct: tracePct, color: '#1d6187' },
-            { label: 'Challenges solved', value: solvedCount, total: totalChallenges, pct: challengePct, color: '#16a34a' },
-          ].map(({ label, value, total, pct, color }, i) => (
-            <div key={label} style={{ padding: '16px 24px', borderLeft: i > 0 ? '1px solid #f3f4f6' : undefined }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', color: '#6b7280' }}>{label}</span>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>{value} / {total}</span>
-              </div>
-              <div style={{ height: '5px', background: '#f3f4f6', borderRadius: '99px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '99px', transition: 'width 0.3s ease' }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main 2-column: Features (left) + Challenges (right) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', alignItems: 'start' }}>
-
-        {/* Features */}
-        <FeatureList
-          projectId={id}
-          usecases={(usecases ?? []).map(uc => ({
-            ...uc,
-            relevant_stacks: (uc.relevant_stacks as string[] | null) ?? [],
-          }))}
-          tracedIds={[...tracedIds]}
-          projectStack={project.stack ?? []}
-          totalUsecases={totalUsecases}
-          tracedCount={tracedCount}
-        />
-
-        {/* Challenges */}
-        <section style={{ minWidth: 0 }}>
-          <div className="card">
-            <div className="card-header">
-              <span className="card-header-title">Challenges</span>
-              <span className="card-header-meta">{solvedCount} / {totalChallenges} solved</span>
-            </div>
-
-            {totalChallenges === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
-                Challenges will appear once more features are traced.
-              </div>
-            ) : (
-              <div style={{ overflow: 'hidden' }}>
-                {[...(challenges ?? [])].sort((a, b) => {
-                  const aSolved = submissionByChallenge[a.id] && submissionByChallenge[a.id] !== 'missed'
-                  const bSolved = submissionByChallenge[b.id] && submissionByChallenge[b.id] !== 'missed'
-                  return (aSolved ? 1 : 0) - (bSolved ? 1 : 0)
-                }).map((ch, i) => {
-                  const grade = submissionByChallenge[ch.id]
-                  const icon = grade ? GRADE_ICON[grade] : null
-                  const isSolved = grade && grade !== 'missed'
-                  return (
-                    <div
-                      key={ch.id}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '12px 14px',
-                        borderTop: i > 0 ? '1px solid #f9fafb' : undefined,
-                        background: isSolved ? '#f0fdf4' : 'white',
-                        gap: '10px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                        <span style={{ fontSize: '14px', lineHeight: 1, flexShrink: 0, width: '18px', textAlign: 'center' }}>
-                          {icon ?? <span style={{ color: '#e5e7eb' }}>○</span>}
-                        </span>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: '12px', fontWeight: 500, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {ch.title}
-                          </p>
-                          <p style={{ fontSize: '11px', color: '#d97706', marginTop: '1px' }}>
-                            {DIFFICULTY_STARS[ch.difficulty] ?? '★☆☆'}
-                          </p>
-                        </div>
-                      </div>
-                      <Link
-                        href={`/projects/${id}/challenge/${ch.id}`}
-                        style={{
-                          flexShrink: 0,
-                          padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 500,
-                          textDecoration: 'none',
-                          ...(isSolved
-                            ? { color: '#16a34a', background: '#dcfce7', border: '1px solid #bbf7d0' }
-                            : { color: 'white', background: '#1d6187', border: '1px solid transparent' }
-                          ),
-                        }}
-                      >
-                        {grade ? 'Retry' : 'Start'}
-                      </Link>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-
-      </div>
-    </div>
-  )
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }

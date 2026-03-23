@@ -1,5 +1,6 @@
 import { createHash } from 'crypto'
 import { unzipSync } from 'fflate'
+import { getPrimaryStack } from '@/lib/stacks/primary'
 
 export interface ExtractedFile {
   path: string
@@ -7,6 +8,13 @@ export interface ExtractedFile {
   language: string | null
   sizeBytes: number
 }
+
+const ZIP_MAGIC_BYTES = [0x50, 0x4b, 0x03, 0x04]
+const MAX_EXTRACTED_TOTAL_BYTES = 100 * 1024 * 1024
+const MAX_EXTRACTED_FILES = 3000
+const MAX_EXTRACTED_FILE_BYTES = 2 * 1024 * 1024
+const MAX_PATH_LENGTH = 240
+const MAX_PATH_DEPTH = 12
 
 const EXCLUDE_PATTERNS = [
   /^node_modules\//,
@@ -27,6 +35,25 @@ const EXCLUDE_PATTERNS = [
   /\.min\.css$/,
 ]
 
+const SECRET_FILE_PATTERNS = [
+  /(^|\/)\.env(\..+)?$/i,
+  /(^|\/)\.npmrc$/i,
+  /(^|\/)\.yarnrc(\.yml)?$/i,
+  /(^|\/)id_(rsa|dsa|ecdsa|ed25519)$/i,
+  /\.(pem|key|p12|pfx|crt|cer)$/i,
+  /(^|\/)(credentials|service-account|firebase-adminsdk)[^/]*\.json$/i,
+]
+
+const SECRET_CONTENT_PATTERNS = [
+  /sk-ant-[a-z0-9\-_]+/i,
+  /sk-[a-z0-9]{20,}/i,
+  /SUPABASE_SERVICE_ROLE_KEY\s*=/,
+  /ANTHROPIC_API_KEY\s*=/,
+  /OPENAI_API_KEY\s*=/,
+  /AWS_SECRET_ACCESS_KEY\s*=/,
+  /BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY/,
+]
+
 const BINARY_EXTENSIONS = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico',
   '.woff', '.woff2', '.ttf', '.eot',
@@ -40,6 +67,12 @@ const LANGUAGE_MAP: Record<string, string> = {
   '.tsx': 'tsx',
   '.js': 'javascript',
   '.jsx': 'jsx',
+  '.dart': 'dart',
+  '.swift': 'swift',
+  '.rb': 'ruby',
+  '.py': 'python',
+  '.vue': 'vue',
+  '.svelte': 'svelte',
   '.css': 'css',
   '.json': 'json',
   '.md': 'markdown',
@@ -68,21 +101,60 @@ function shouldExclude(path: string): boolean {
   return false
 }
 
+function isUnsafeArchivePath(path: string): boolean {
+  if (path.length > MAX_PATH_LENGTH) return true
+  if (path.startsWith('/') || path.startsWith('\\')) return true
+  if (path.includes('..') || path.includes('\0')) return true
+
+  const segments = path.split('/').filter(Boolean)
+  if (segments.length > MAX_PATH_DEPTH) return true
+  if (segments.some(segment => segment === '.' || segment === '..')) return true
+
+  return false
+}
+
+export function shouldExcludeFromAI(path: string, content: string): boolean {
+  if (SECRET_FILE_PATTERNS.some(pattern => pattern.test(path))) return true
+  if (SECRET_CONTENT_PATTERNS.some(pattern => pattern.test(content))) return true
+  return false
+}
+
+export function hasZipMagicBytes(buffer: Buffer): boolean {
+  return ZIP_MAGIC_BYTES.every((byte, index) => buffer[index] === byte)
+}
+
 export function estimateTokens(content: string): number {
   return Math.ceil(content.length * 0.5)
 }
 
 export function extractZip(buffer: Buffer): { files: ExtractedFile[]; hash: string } {
+  if (!hasZipMagicBytes(buffer)) {
+    throw new Error('Invalid ZIP signature')
+  }
+
   const hash = createHash('sha256').update(buffer).digest('hex')
 
   const uint8 = new Uint8Array(buffer)
   const unzipped = unzipSync(uint8)
 
   const files: ExtractedFile[] = []
+  let totalExtractedBytes = 0
 
   for (const [filePath, fileData] of Object.entries(unzipped)) {
     // ディレクトリエントリはスキップ（パスが / で終わる）
     if (filePath.endsWith('/')) continue
+    if (isUnsafeArchivePath(filePath)) {
+      throw new Error(`Unsafe ZIP entry path: ${filePath}`)
+    }
+    if (fileData.length > MAX_EXTRACTED_FILE_BYTES) {
+      throw new Error(`ZIP entry too large: ${filePath}`)
+    }
+
+    totalExtractedBytes += fileData.length
+    if (totalExtractedBytes > MAX_EXTRACTED_TOTAL_BYTES) {
+      throw new Error('ZIP extracted payload too large')
+    }
+
     if (shouldExclude(filePath)) continue
 
     const content = Buffer.from(fileData).toString('utf-8')
@@ -95,6 +167,10 @@ export function extractZip(buffer: Buffer): { files: ExtractedFile[]; hash: stri
       language: getLanguage(filePath),
       sizeBytes: fileData.length,
     })
+
+    if (files.length > MAX_EXTRACTED_FILES) {
+      throw new Error('Too many files in ZIP archive')
+    }
   }
 
   return { files, hash }
@@ -102,25 +178,77 @@ export function extractZip(buffer: Buffer): { files: ExtractedFile[]; hash: stri
 
 export function selectFilesForAnalysis(
   files: ExtractedFile[],
-  maxTokens = 150_000
+  maxTokens = 150_000,
+  projectStack: string[] = []
 ): ExtractedFile[] {
   const EXCLUDE_FOR_AI = [
-    /\.test\.(ts|tsx|js|jsx)$/,
-    /\.spec\.(ts|tsx|js|jsx)$/,
+    /\.test\.(ts|tsx|js|jsx|dart|py|rb)$/,
+    /\.spec\.(ts|tsx|js|jsx|dart|py|rb)$/,
     /\.d\.ts$/,
     /\.stories\.(ts|tsx)$/,
+    /(^|\/)tests?\//,
+    /(^|\/)__tests__\//,
+    /(^|\/)spec\//,
   ]
 
   const priority1: ExtractedFile[] = []
   const priority2: ExtractedFile[] = []
   const priority3: ExtractedFile[] = []
+  const primaryStack = getPrimaryStack(projectStack)
+
+  // The primary stack is resolved once and then reused so file selection stays
+  // aligned with prompt selection when multiple stacks are detected.
+  const isPriority1 = (path: string) => {
+    if (primaryStack === 'Flutter') {
+      return /^(lib|bin)\/.*\.dart$/.test(path)
+    }
+    if (primaryStack === 'Swift') {
+      return /(^|\/)(Sources|Views|ViewModels|Models|Services|Features)\//.test(path) || /\.swift$/.test(path)
+    }
+    if (primaryStack === 'Ruby on Rails') {
+      return /^(app|config)\/.+/.test(path) || path === 'config/routes.rb' || path === 'db/schema.rb'
+    }
+    if (primaryStack === 'Python') {
+      return /^(app|src|project|templates)\/.+/.test(path) || /\.py$/.test(path)
+    }
+    if (primaryStack === 'Vue' || primaryStack === 'Nuxt') {
+      return /^(pages|components|composables|stores|layouts|app)\/.+\.(vue|ts|js)$/.test(path) || /\.vue$/.test(path)
+    }
+    if (primaryStack === 'Svelte' || primaryStack === 'SvelteKit') {
+      return /^(src|routes)\/.+\.(svelte|ts|js)$/.test(path) || /\.svelte$/.test(path)
+    }
+    return /^(src|app)\/.*\.(tsx?|jsx?)$/.test(path)
+  }
+
+  const isPriority2 = (path: string) => {
+    if (primaryStack === 'Flutter') {
+      return path === 'pubspec.yaml' || path === 'pubspec.lock' || /^analysis_options\.yaml$/.test(path)
+    }
+    if (primaryStack === 'Swift') {
+      return path === 'Package.swift' || /\.plist$/.test(path) || path.endsWith('.xcodeproj/project.pbxproj')
+    }
+    if (primaryStack === 'Ruby on Rails') {
+      return path === 'Gemfile' || path === 'Gemfile.lock' || /^config\/(application|environment|database)\.rb$/.test(path)
+    }
+    if (primaryStack === 'Python') {
+      return path === 'pyproject.toml' || path === 'requirements.txt' || path === 'Pipfile'
+    }
+    if (primaryStack === 'Vue' || primaryStack === 'Nuxt') {
+      return /^(nuxt\.config|vite\.config)\.(ts|js|mjs)$/.test(path) || path === 'package.json'
+    }
+    if (primaryStack === 'Svelte' || primaryStack === 'SvelteKit') {
+      return /^(svelte\.config|vite\.config)\.(ts|js|mjs)$/.test(path) || path === 'package.json'
+    }
+    return /\.(config\.(ts|js|mjs)|json)$/.test(path) && !path.includes('/')
+  }
 
   for (const file of files) {
     if (EXCLUDE_FOR_AI.some(p => p.test(file.path))) continue
+    if (shouldExcludeFromAI(file.path, file.content)) continue
 
-    if (/^(src|app)\/.*\.(tsx?|jsx?)$/.test(file.path)) {
+    if (isPriority1(file.path)) {
       priority1.push(file)
-    } else if (/\.(config\.(ts|js|mjs)|json)$/.test(file.path) && !file.path.includes('/')) {
+    } else if (isPriority2(file.path)) {
       priority2.push(file)
     } else {
       priority3.push(file)

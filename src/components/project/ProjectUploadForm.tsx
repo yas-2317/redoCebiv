@@ -2,6 +2,7 @@
 
 import { useState, useRef, DragEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import { CREDIT_COSTS } from '@/lib/billing/config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -134,7 +135,7 @@ export default function ProjectUploadForm() {
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       <Button type="submit" disabled={!file || loading} className="w-full">
-        {loading ? 'Starting analysis...' : 'Start analysis (−5 charts)'}
+        {loading ? 'Starting analysis...' : `Start analysis (−${CREDIT_COSTS.initial_analysis} charts)`}
       </Button>
     </form>
   )

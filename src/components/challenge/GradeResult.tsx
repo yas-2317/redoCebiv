@@ -53,14 +53,16 @@ export function GradeResult({
       {/* Correct files + code + change type */}
       <div style={sectionStyle}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div>
-            <p style={labelStyle}>Correct file{correctFiles.length > 1 ? 's' : ''}</p>
-            <ul style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              {correctFiles.map(f => (
-                <li key={f} style={{ fontFamily: 'monospace', fontSize: '13px', color: '#111827' }}>{f}</li>
-              ))}
-            </ul>
-          </div>
+          {correctFiles.length > 0 && (
+            <div>
+              <p style={labelStyle}>Correct file{correctFiles.length > 1 ? 's' : ''}</p>
+              <ul style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {correctFiles.map(f => (
+                  <li key={f} style={{ fontFamily: 'monospace', fontSize: '13px', color: '#111827' }}>{f}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {correctCode && (
             <div>

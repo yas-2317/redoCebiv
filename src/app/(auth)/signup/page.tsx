@@ -5,12 +5,14 @@ export const dynamic = 'force-dynamic'
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { getPlanInfo } from '@/lib/billing/config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function SignupPage() {
+  const freePlan = getPlanInfo('wanderer')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -67,12 +69,12 @@ export default function SignupPage() {
       <CardHeader className="text-center pb-2">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="" style={{ height: '48px', width: 'auto' }} />
+          <img src="/logo.png" alt="" className="dark:invert" style={{ height: '48px', width: 'auto' }} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/wordmark.png" alt="redoCebiv" style={{ height: '32px', width: 'auto' }} />
+          <img src="/wordmark.png" alt="redoCebiv" className="dark:invert" style={{ height: '32px', width: 'auto' }} />
         </div>
         <CardTitle className="text-xl">Create account</CardTitle>
-        <CardDescription>Free to start — 15 charts included</CardDescription>
+        <CardDescription>Free to start — {freePlan.monthlyCredits} charts included</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button
@@ -128,6 +130,28 @@ export default function SignupPage() {
           <Link href="/login" className="underline">
             Sign in
           </Link>
+        </p>
+
+        <p className="pt-1 text-center text-xs text-gray-400">
+          By continuing, you agree to our{' '}
+          <a
+            href="https://yas-2317.github.io/redoCebiv/terms.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a
+            href="https://yas-2317.github.io/redoCebiv/privacy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            Privacy Policy
+          </a>
+          .
         </p>
       </CardContent>
     </Card>

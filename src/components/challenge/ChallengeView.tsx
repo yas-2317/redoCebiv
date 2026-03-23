@@ -1,23 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import type { ChallengeAnswer, ChallengeDifficulty, ChallengeFormat } from '@/lib/challenges/types'
 import { FileTree } from './FileTree'
 import { GradeResult } from './GradeResult'
 import { ChoiceSelector } from './ChoiceSelector'
-
-interface ChallengeAnswer {
-  choices?: string[]
-  correct_index?: number
-  current_code?: string
-}
 
 interface Challenge {
   id: string
   title: string
   description: string
   type: string
-  difficulty: number
-  format: 'file_selection' | 'code_choice'
+  difficulty: ChallengeDifficulty
+  format: ChallengeFormat
   hint: string | null
   answer: ChallengeAnswer
 }

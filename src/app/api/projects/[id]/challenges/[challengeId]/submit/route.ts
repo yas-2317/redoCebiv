@@ -1,38 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateExplanation } from '@/lib/anthropic/grade'
-
-interface SubmitBody {
-  selectedFiles: string[]
-  answerText: string
-  usedHint: boolean
-  selectedIndex?: number
-}
-
-interface ChallengeAnswer {
-  correct_files: string[]
-  correct_code: string
-  explanation: string
-  change_type: string
-  related_examples: string[]
-  choices?: string[]
-  correct_index?: number
-}
+import type { ChallengeAnswer, ChallengeFormat } from '@/lib/challenges/types'
+import { logRecoveryEvent } from '@/lib/recovery-events/service'
+import { enforceRateLimit, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/security/rate-limit'
+import { isUuid, validateChallengeSubmitInput } from '@/lib/security/validation'
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; challengeId: string }> }
 ) {
   const { id: projectId, challengeId } = await params
+  if (!isUuid(projectId) || !isUuid(challengeId)) {
+    return NextResponse.json({ error: 'INVALID_ID' }, { status: 400 })
+  }
+
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const allowed = await enforceRateLimit({
+    supabase,
+    actorKey: user.id,
+    ...RATE_LIMITS.challengeSubmit,
+  })
+  if (!allowed) return rateLimitExceededResponse()
+
   // Verify project ownership
   const { data: project } = await supabase
     .from('projects')
-    .select('id')
+    .select('id, stack')
     .eq('id', projectId)
     .eq('user_id', user.id)
     .single()
@@ -42,17 +40,28 @@ export async function POST(
   // Load challenge with answer
   const { data: challenge } = await supabase
     .from('challenges')
-    .select('id, title, answer, difficulty, format')
+    .select('id, title, answer, difficulty, format, usecase_id, usecases(name)')
     .eq('id', challengeId)
     .eq('project_id', projectId)
     .single()
 
   if (!challenge) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const body: SubmitBody = await req.json()
-  const { selectedFiles, answerText, usedHint, selectedIndex } = body
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
+  }
+
+  const parsed = validateChallengeSubmitInput(body)
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+
+  const { selectedFiles, answerText, usedHint, selectedIndex } = parsed.value
   const answer = challenge.answer as ChallengeAnswer
-  const format = (challenge.format ?? 'file_selection') as string
+  const format = (challenge.format ?? 'file_selection') as ChallengeFormat
 
   // Rule-based grade
   let grade: 'self' | 'with_hint' | 'missed'
@@ -83,10 +92,16 @@ export async function POST(
     explanation = await generateExplanation({
       title: challenge.title,
       grade,
+      format,
       selectedFiles,
       correctFiles: answer.correct_files,
       answerText,
       correctCode: answer.correct_code,
+      selectedIndex,
+      correctIndex: answer.correct_index,
+      choices: answer.choices,
+      currentCode: answer.current_code,
+      projectStack: project.stack ?? [],
     })
   }
 
@@ -101,6 +116,22 @@ export async function POST(
     grade,
     explanation,
     selected_index: selectedIndex ?? null,
+  })
+
+  await logRecoveryEvent({
+    supabase,
+    userId: user.id,
+    projectId,
+    challengeId,
+    usecaseId: challenge.usecase_id ?? null,
+    eventType:
+      grade === 'self'
+        ? 'challenge_self_solved'
+        : grade === 'with_hint'
+          ? 'challenge_solved_with_hint'
+          : 'challenge_missed',
+    title: challenge.title,
+    detail: ((challenge.usecases as unknown as { name: string } | null)?.name) ?? '',
   })
 
   return NextResponse.json({

@@ -1,0 +1,113 @@
+Subject,Start Date,Start Time,End Time,All Day Event,Description,Location,Private
+"📝 [JP] Quiet Monday | 静かなツールの思想",03/23/2026,09:00 AM,09:30 AM,False,"テーマ: 「静かなツール」とは使っているのを忘れるツールのこと
+角度: 開発者にとっての「静か」= コードが理解できている状態
+書くこと: 理解できていないコードはずっとノイズを出し続ける。redoCebivを作った根っこの思想
+タグ: #QuietMonday #QuietTools",,False
+"📝 [JP] 共感 | 天才→絶望の落差",03/24/2026,09:00 AM,09:30 AM,False,"テーマ: バイブコーディング最初の1週間と2週間後のギャップ
+角度: 「天才かも」→「どのファイルを開けばいいんだ」の落差
+書くこと: 自分の実体験。この落差がredoCebivを作った原点
+タグ: #バイブコーディング",,False
+"📝 [EN] Tips | onClick first",03/25/2026,10:00 PM,10:30 PM,False,"テーマ: How to find what controls a button in AI-generated code
+角度: onClick is your entry point — 80% of behavior lives in the same file
+書くこと: Search for onClick in the component first. Then follow the function. Stop when you know what changes.
+タグ: #vibecoding #React",,False
+"📝 [JP] 共感 | 質問が作れない壁",03/26/2026,09:00 AM,09:30 AM,False,"テーマ: Cursorに聞きたいのに「何を聞けばいいか」がわからない
+角度: 問題は「AIが賢くない」ことじゃなく「自分が何を知らないかわからない」こと
+書くこと: ChatGPTに「構造を教えて」と聞いたけど答えがズレてた体験
+タグ: #バイブコーディング",,False
+"📝 [EN] Build Friday | Why I'm building redoCebiv",03/27/2026,10:00 PM,10:30 PM,False,"テーマ: Why I'm building redoCebiv
+角度: Every code-understanding tool assumes you know what to ask. Vibe coders don't.
+書くこと: Tested 6+ tools, found the same gap in all of them. That's what redoCebiv fills.
+タグ: #buildinpublic #vibecoding",,False
+"📝 [JP] 共感 | エラーループの虚無感",03/28/2026,09:00 AM,09:30 AM,False,"テーマ: AIに修正してもらう→直る→また壊れる→また頼む
+角度: 毎回直るけど何も学んでいない。蓄積がない恐怖
+書くこと: 同じ場所が3回壊れた体験。3回ともAIに投げた。今も自分では説明できない
+タグ: #バイブコーディング",,False
+"📝 [EN] BIP | The gap nobody is filling",03/29/2026,10:00 PM,10:30 PM,False,"テーマ: The gap nobody is filling in the code-understanding space
+角度: All tools assume you can ask questions. None proactively map your features for you.
+書くこと: Tested Sourcegraph / Greptile / Denigma / ChatGPT — same assumption in all of them
+タグ: #buildinpublic #vibecoding",,False
+"📝 [JP] Quiet Monday | 今週削ったもの",03/30/2026,09:00 AM,09:30 AM,False,"テーマ: 今週、何かを削った・シンプルにしたことの報告
+角度: 機能でも、コードでも、設計でも何でもOK。引き算の美学
+書くこと: 実際に今週やったこと。「なぜ削ったか」を一言添える
+タグ: #QuietMonday",,False
+"📝 [EN] Tips | Start at page.tsx",03/31/2026,10:00 PM,10:30 PM,False,"テーマ: How to start reading an AI-generated Next.js app
+角度: page.tsx or App.tsx is your entry point — everything starts here
+書くこと: page.tsx → components/ → hooks/ の順に読む。この3ステップで80%読める
+タグ: #vibecoding #NextJS",,False
+"📝 [EN] Tips | 4 files that explain your app",04/01/2026,10:00 PM,10:30 PM,False,"テーマ: 4 files that explain 90% of a Next.js app's behavior
+角度: page.tsx / layout.tsx / loading.tsx / error.tsx — just these 4
+書くこと: それぞれ何をするか一行で。「これだけで全体のマップになる」
+タグ: #vibecoding #NextJS",,False
+"📝 [JP] 共感 | 直してもらうループ",04/02/2026,09:00 AM,09:30 AM,False,"テーマ: AIに「直して」と頼み続けた結果、何も自分に残らない
+角度: 毎回直るけど理解はゼロのまま。自分には何も積み上がっていない
+書くこと: 同じエラーが3回出た。今も「なぜ直ったか」を説明できない
+タグ: #バイブコーディング",,False
+"📝 [EN] Build Friday | 今週の進捗",04/03/2026,10:00 PM,10:30 PM,False,"テーマ: This week's progress on redoCebiv
+角度: What I worked on, what I learned, what's next — honest update
+書くこと: 実際の今週の進捗を正直に。数字があれば入れる
+タグ: #buildinpublic",,False
+"📝 [JP] 哲学 | 逆張りポジション",04/04/2026,09:00 AM,09:30 AM,False,"テーマ: バイブコーディングツールが全員「速く作る」レースをしている
+角度: redoCebivだけが逆を向いている。「作った後に、理解する」
+書くこと: Cursor/Bolt/Lovable/Claude Code——全員同じ方向。ニッチに見えるが全員が直面する問題
+タグ: #バイブコーディング",,False
+"📝 [JP] 共感 | 他人の家を歩く感覚",04/05/2026,09:00 AM,09:30 AM,False,"テーマ: 自分のプロジェクトなのに他人の家を歩いている感覚
+角度: 暗闇の中で電気のスイッチを探している
+書くこと: ファイルを開いた瞬間の「どこから手をつければいいんだ」感
+タグ: #バイブコーディング",,False
+"📝 [JP] Quiet Monday | 今週のシンプル化",04/06/2026,09:00 AM,09:30 AM,False,"テーマ: 今週シンプルにしたこと・やらないと決めたこと
+角度: 何を捨てたか。Before/Afterを一言で
+書くこと: 具体的なエピソード。「これをやめたらスッキリした」という体験
+タグ: #QuietMonday",,False
+"📝 [JP] BIP | 機能抽出の難しさ",04/07/2026,09:00 AM,09:30 AM,False,"テーマ: Swiftプロジェクトで機能抽出精度を上げている開発メモ
+角度: ViewControllerに処理が密集→機能の境界が見えない。これはまさにバイブコーダーの問題と同じ構造
+書くこと: 開発中に気づいた発見。ツールを作りながら自分が問題を体験している
+タグ: #buildinpublic",,False
+"📝 [EN] Tips | Components vs Pages",04/08/2026,10:00 PM,10:30 PM,False,"テーマ: The only mental model you need for AI-generated apps
+角度: Pages = tied to URLs. Components = reusable pieces. That's the whole map.
+書くこと: この2種類を知るだけで「なぜあっちも変わった？」がわかる
+タグ: #vibecoding #React",,False
+"📝 [EN] 共感 | AI code quality data",04/09/2026,10:00 PM,10:30 PM,False,"テーマ: Data on AI-generated code quality
+角度: 45% of AI-generated code has security vulnerabilities. You can't fix what you can't find.
+書くこと: Veracode / CodeRabbit のデータ。修正するには「どこにあるか」を知る必要がある
+タグ: #vibecoding",,False
+"📝 [EN] Build Friday | β準備の進捗",04/10/2026,10:00 PM,10:30 PM,False,"テーマ: Beta prep progress
+角度: What's working, what's not — honest update
+書くこと: 今週のβ向け実装進捗。詰まっていることがあれば正直に書く
+タグ: #buildinpublic",,False
+"📝 [JP] Tips | inspect elementで探す方法",04/11/2026,09:00 AM,09:30 AM,False,"テーマ: ブラウザのinspect elementでファイルを見つける方法
+角度: 右クリック→検証→クラス名をコピー→Cmd+Shift+Fで検索
+書くこと: 自分が今でも毎日やっている方法。本物の開発者も同じことをしている
+タグ: #バイブコーディング",,False
+"📝 [EN] 哲学 | Karpathy and agentic engineering",04/12/2026,10:00 PM,10:30 PM,False,"テーマ: Karpathy's shift from vibe coding to agentic engineering
+角度: The next phase isn't building faster — it's understanding what you built
+書くこと: 2026年のKarpathyの発言。業界の流れが「理解」に向かっている
+タグ: #vibecoding",,False
+"📝 [JP] Quiet Monday | 今週の引き算",04/13/2026,09:00 AM,09:30 AM,False,"テーマ: 今週の「引き算」報告
+角度: 何をやらないと決めたか。何を捨てたか
+書くこと: 具体的なエピソード。「やめたら良かった」か「やめて後悔した」か正直に
+タグ: #QuietMonday",,False
+"📝 [JP] 共感 | バグ修正で何した？",04/14/2026,09:00 AM,09:30 AM,False,"テーマ: バイブコーダーへの問いかけ
+角度: AIで作ったアプリ、最初のバグ修正のとき何をした？
+書くこと: 選択肢を提示して聞く（①Cursorに投げた ②ChatGPTに貼った ③自分でファイルを開いた ④諦めた）
+タグ: #バイブコーディング",,False
+"📝 [EN] Tips | Global search is your best friend",04/15/2026,10:00 PM,10:30 PM,False,"テーマ: Global search is the universal coping mechanism
+角度: Cmd+Shift+F → paste what you see on screen → find the file in 30 seconds
+書くこと: 「本物の開発者も毎日これをやっている。恥ずかしくない」という事実
+タグ: #vibecoding",,False
+"📝 [JP] BIP | ウェイトリスト開始",04/16/2026,09:00 AM,09:30 AM,False,"テーマ: ウェイトリスト開始の報告
+角度: 誰のために作っているかを一言で
+書くこと: 「AIで作ったコードを取り戻したい人へ」というメッセージ。現在の登録者数
+タグ: #buildinpublic #バイブコーディング",,False
+"📝 [EN] Build Friday | デモ準備",04/17/2026,10:00 PM,10:30 PM,False,"テーマ: Preparing the beta demo
+角度: What I want people to feel when they see it for the first time
+書くこと: ZIP → 機能一覧 → 選択 → ファイル表示。このフローを見せたときに伝えたいこと
+タグ: #buildinpublic",,False
+"📝 [EN] 共感 | Your own code is untouchable",04/18/2026,10:00 PM,10:30 PM,False,"テーマ: The moment your own codebase becomes untouchable
+角度: You built it. You can't touch it. That's not failure — that's a missing step.
+書くこと: 「スキル不足じゃなく、理解のステップが抜けているだけ」という視点
+タグ: #vibecoding",,False
+"📝 [JP] BIP | 1ヶ月振り返り",04/19/2026,09:00 AM,09:30 AM,False,"テーマ: 1ヶ月間のbuild in public振り返り
+角度: 数字と正直な感想
+書くこと: フォロワー数・反応があった投稿・学んだこと・来月の目標。「続けます」という宣言
+タグ: #buildinpublic #バイブコーディング",,False

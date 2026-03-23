@@ -1,74 +1,290 @@
-# コンテンツカレンダー — Week 1〜4（英語メイン）
+# コンテンツカレンダー — スレッド・単発ポスト・投稿スケジュール
 
 投稿頻度: 1〜2投稿/日
-言語比率: 英語85% / 日本語15%（週1〜2本）
+言語比率: 英語70% / 日本語30%
 自動化: Make + Buffer + Claude API
 
 ---
 
-## Week 1: 共感フェーズ（"You know this feeling"）
-
-| 日 | 言語 | 本文 |
-|---|---|---|
-| Day 1 | EN | You vibed coded an app. It works. You're proud. Then you try to change one button label. 40 minutes later you've opened 12 files and still don't know where to look. |
-| Day 2 | EN | "The AI fixed it. I have no idea why it works now." This is the vibe coding wall. Not a skill issue. A missing step. |
-| Day 3 | EN | 3 reasons your vibe-coded app feels untouchable: 1. Too many files, no idea which one 2. Fear of breaking something you don't understand 3. No sense of progress All three are solvable. |
-| Day 4 | JP | Cursorで作ったアプリ、ボタンのテキスト変えたいだけなのにどのファイルか分からない問題、全世界共通らしい |
-| Day 5 | EN | Building a tool to help vibe coders understand their own code. Not rewrite it. Not explain all of it. Just: "here's exactly which file controls that feature and why." |
-| Day 6 | EN | "I used v0/Lovable/Cursor and shipped an app. But I can't touch a single line of it." That's not embarrassing. That's a gap between 'build' and 'understand'. You just need the bridge. |
-| Day 7 | EN | Week 1 in #buildinpublic: Started posting about the vibe coding wall. Turns out a lot of people hit it. Building something about it. More soon. |
+# PART 1: スレッド
 
 ---
 
-## Week 2: 教育フェーズ（Tips that actually help）
+## スレッド① 【マニフェスト・固定ツイート用】
 
-| 日 | 言語 | 本文 |
-|---|---|---|
-| Day 8 | EN | How to read AI-generated React code (without reading all of it): 1. Find `page.tsx` or `App.tsx` — that's your entry 2. Look for `onClick` / `onSubmit` — that's where features start 3. Follow the function. Stop when you know what changes. You don't need to understand everything. |
-| Day 9 | EN | Tip: when you want to change a button's behavior, search for `onClick` in that component first. 80% of the time, the answer is in the same file. The other 20% is one import away. |
-| Day 10 | EN | Before: "This file looks important. I think. Maybe." After: "The add button lives in AddTaskForm.tsx line 18. If I want to disable it, I change this one prop." That shift is learnable. |
-| Day 11 | JP | React初心者がAI生成コードで最初に読むべきファイル順。① page.tsx（入口）② components/配下（UI）③ hooks/（状態）この順だけで80%読める |
-| Day 12 | EN | "My AI fix broke something else across the codebase" The root cause: you didn't know which files were connected. Before you change anything, map the blast radius. Which files call this function? That 5-minute check saves hours. |
-| Day 13 | EN | If you want to add validation to a form, look for: 1. The form component (`Form.tsx` or similar) 2. The `disabled` prop on the submit button 3. The `onSubmit` handler These three spots cover 90% of validation changes in React. |
-| Day 14 | EN | Wrote something: "How to read AI-generated code you didn't write" → [dev.to link] If you've ever vibed coded and felt lost in your own app, this is for you. |
+```
+1/
+AIでiOSアプリを4つ出した。Cursor、v0、Claudeを使って。全部App Storeに並んでる。
+
+でもある日気づいた。自分のアプリのコードが、自分のものじゃない。
+
+機能を追加しようとファイルを開いた。何がどこにあるのかわからなかった。
+```
+
+```
+2/
+ChatGPTに聞いた。「このプロジェクトの構造を教えて」
+でも、何を聞けばいいかがわからない。
+
+Cursorに聞いた。「この機能はどこにある？」
+でも、「この機能」が何かを言語化できない。
+
+問題は「AIが賢くない」ことじゃなかった。
+「自分が何を知らないか」がわからないことだった。
+```
+
+```
+3/
+だからredoCebivを作った。
+（vibeCoder を逆さから読んでみて）
+
+ZIPをアップロードする。
+AIが「このアプリにはこういう機能がある」と一覧で出す。
+機能を選ぶと、関連ファイルと処理の流れが表示される。
+
+質問を考える必要がない。最初の一歩を、ツールが用意する。
+```
+
+```
+4/
+CursorもClaude Codeも「質問すれば答えてくれる」。
+でもバイブコーダーの本当の壁は「質問が作れない」こと。
+
+redoCebivは、その壁を壊すために作った。
+機能から入って、コードを理解する。ファイルツリーの考古学はもう終わり。
+```
+
+```
+5/
+バイブコーディングの次のステップは「もっと速く作る」じゃない。
+「作ったものを、自分のものにする」。
+
+ベータ準備中。ウェイトリスト受付中。
+quiet-tools.jp/redoCebiv
+
+#VibeCoding #バイブコーディング #buildinpublic
+```
 
 ---
 
-## Week 3: デモフェーズ（Show the product）
+## スレッド② 【競合分析・知見共有】
 
-※ アプリのスクリーンショット / GIF が必要
+Zenn/Dev.to記事の公開日に投稿し、最後のツイートに記事リンクを貼る。
 
-| 日 | 言語 | 本文 |
-|---|---|---|
-| Day 15 | EN | Here's redoCebiv in action. Upload your ZIP → pick a feature → see exactly which files are involved and why. [スクショ添付] |
-| Day 16 | EN | "I want to disable the submit button when the input is empty" — type that into redoCebiv. It tells you: which file, which line, why that's the right place, and how hard it is. [スクショ] |
-| Day 17 | EN | The growth tracker in redoCebiv: not points or streaks. Just three questions: Can you read the code? Can you predict where to change it? Can you actually change it? Real progress, not gamification. [スクショ] |
-| Day 18 | JP | redoCebivのデモ。ZIPを投げると → 機能一覧が出る → どのファイルが動かしてるか分かる → 軽い課題が出る。「触れないコード」が少しずつ自分のコードになっていく感じ [スクショ] |
-| Day 19 | EN | How redoCebiv differs from just asking Cursor/Claude: Cursor: "Fix this for me" → done, still don't understand redoCebiv: "Show me how this feature works" → now I understand it Tools for building. Tools for understanding. Both matter. |
-| Day 20 | EN | 5-step walkthrough of redoCebiv: 1/ Upload your ZIP 2/ Pick a feature (e.g. "add task") 3/ See the related files and flow 4/ Try a mini challenge 5/ Track your understanding [スクショ each step] |
-| Day 21 | EN | β waitlist is open. If you've built something with Cursor/v0/Lovable and want to actually understand it — this is for you. [URL] |
+```
+1/
+バイブコーダーが「自分のコードがわからない」とき、使える選択肢を全部調べた。
+
+結論：「何を聞けばいいかわからない人」向けのツールは、まだ存在しない。
+
+以下、カテゴリ別に整理する。
+```
+
+```
+2/
+【プロ向けツール】
+・Sourcegraph Cody — リポジトリ全体をAIが理解。強力。ただしIDE統合+セットアップ必須。エンタープライズ向け
+・Greptile — $180M評価。コードグラフ構築+PRレビュー。GitHub連携前提
+・Swimm — コードドキュメントの自動同期。チームのオンボーディング用
+
+共通点：全部「プロ開発者」「チーム」が前提。バイブコーダーが使うにはハードルが高すぎる。
+```
+
+```
+3/
+【身近な代替手段】
+・Denigma — コードを貼ると平易な英語で説明してくれる。ただしスニペット単位
+・ChatGPT/Claudeに「説明して」— 最も手軽。ただしファイル単位。プロジェクト全体は無理
+・CodeVisualizer（VS Code拡張）— フローチャート生成。ただしVS Code必須
+
+共通の限界：全部「どのファイルを見るか」を自分で選ぶ前提。バイブコーダーはそこが一番わからない。
+```
+
+```
+4/
+【最大の潜在脅威】
+・Cursorの内蔵理解機能 — すでにプロジェクト構造を把握してる。質問すれば答える
+・Claude Code — プロジェクトを読ませて説明させられる
+
+ただし両方「質問ドリブン」。何を聞くかは自分で考える。
+「機能一覧を自動抽出→逆引き」はどちらもやってない。
+```
+
+```
+5/
+まとめると：
+
+「コードを理解する」ツールは大量にある。
+「何を聞けばいいかわからない人のための、最初の一歩」を提供するツールはゼロ。
+
+redoCebivはここに立つ。
+ZIPを送る→機能一覧が出る→選ぶと中身がわかる。
+
+quiet-tools.jp/redoCebiv
+
+#VibeCoding #バイブコーディング #buildinpublic
+```
 
 ---
 
-## Week 4: コミュニティ・転換フェーズ
+# PART 2: 単発ポスト（日替わり用・10本）
 
-| 日 | 言語 | 本文 |
-|---|---|---|
-| Day 22 | EN | "I don't want to learn programming. I just want to be able to fix my own app." This is the most common thing vibe coders tell me. redoCebiv is built for exactly this. β → [URL] |
-| Day 23 | EN | Quick Next.js tip for vibe coders: `app/` folder breakdown: `page.tsx` = the screen `layout.tsx` = the wrapper `loading.tsx` = what shows while loading `error.tsx` = what shows on error Just these 4. That's your map. |
-| Day 24 | EN | What's the hardest part of reading your vibe-coded app? (Building redoCebiv to solve whatever you say) |
-| Day 25 | EN | New post: "The vibe coding wall — and how to break through it" → [dev.to link] |
-| Day 26 | EN | #buildinpublic update: [N] people on the β waitlist. Working on: [feature in progress] Next milestone: [date/goal] Thanks for following along. |
-| Day 27 | JP | 「プログラミングを学びたいんじゃない、自分のアプリを直したいだけ」— これを言ってくれた人が一番多かった。それに答えるものを作っています。 |
-| Day 28 | EN | Month 1 wrap: [N] followers, [N] β signups. Top post: [quote] Month 2 goal: ship β. See you there. |
+2週間分のストック。
 
 ---
 
-## スプレッドシートのテーマ文字列（B列）
+### ポスト①（共感・体験）
+```
+バイブコーディング、最初の1週間：「俺、天才かもしれない」
+2週間後にバグ修正：「……どのファイルを開けばいいんだ」
+
+この落差が、redoCebivを作った原点。
+#バイブコーディング
+```
+
+### ポスト②（競合との差を端的に）
+```
+ChatGPTに「このプロジェクト説明して」→「Next.jsのアプリです」（知ってる）
+
+redoCebivに同じZIPを渡す→「7つの機能があります。①ログイン ②タスク追加 ③通知設定…」
+
+違いは「質問が要らない」こと。
+```
+
+### ポスト③（Karpathyの文脈に乗る）
+```
+Karpathyが2026年に提唱した「agentic engineering」。
+バイブコーディングの次は「品質を妥協しないAI活用」。
+
+でも品質を担保するには、まず自分のコードを理解する必要がある。
+その最初の一歩が、redoCebiv。
+#VibeCoding
+```
+
+### ポスト④（データ引用・権威）
+```
+CodeRabbitの分析：AI生成コードは人間のコードの1.7倍の問題を含む。
+Veracodeの調査：AI生成コードの45%にセキュリティ脆弱性。
+
+修正するにも、まず「何がどこにあるか」がわからないと始まらない。
+redoCebivは「まず全体を見渡す」ためのツール。
+```
+
+### ポスト⑤（Build in Public）
+```
+redoCebiv開発メモ：
+Swiftプロジェクトの機能抽出精度を上げてる。
+ViewControllerに処理が密集してると、機能の境界が見つけにくい。
+
+これ、まさにバイブコーダーが直面する「なぜここにこのコードがあるの」問題。
+#buildinpublic
+```
+
+### ポスト⑥（O'Reilly本の文脈）
+```
+O'Reilly Japan『バイブコーディングを超えて』第5章：
+「生成されたコードを理解する：レビュー、改良、所有」
+
+この章が手動プロセスとして書いていることを、ツールで自動化した。
+それがredoCebiv。
+```
+
+### ポスト⑦（問いかけ型・エンゲージメント）
+```
+バイブコーダーに聞きたい。
+
+AIで作ったアプリ、最初のバグ修正のとき何した？
+① Cursorに「直して」と丸投げ
+② ChatGPTにエラー貼り付け
+③ 自分でファイルを1個ずつ開いた
+④ 諦めて作り直した
+
+#バイブコーディング
+```
+
+### ポスト⑧（逆張りポジション）
+```
+バイブコーディングツールは全員「もっと速く作る」レースをしてる。
+Cursor、Bolt、Lovable、Claude Code——同じ方向。
+
+redoCebivだけ逆を向いてる。「作った後に、理解する」。
+
+ニッチに見える？
+でも全バイブコーダーが遅かれ早かれ直面する問題。
+```
+
+### ポスト⑨（英語・グローバルリーチ）
+```
+Every vibe coding tool helps you build faster.
+None of them help you understand what you built.
+
+redoCebiv: Upload a ZIP. Get a feature map. Trace the code.
+No questions needed. The tool asks them for you.
+
+quiet-tools.jp/redoCebiv
+#vibecoding #buildinpublic
+```
+
+### ポスト⑩（哲学・ブランド）
+```
+「静かなツール」とは、使っているのを忘れるツールのこと。
+
+でも開発者にとって「静か」とは、コードが理解できている状態のことだと思う。
+理解できていないコードはずっとノイズを出し続ける。
+
+redoCebivは、そのノイズを止めるためのツール。
+```
+
+---
+
+# PART 3: 投稿スケジュール
+
+---
+
+## 推奨発信順序
+
+| 順番 | コンテンツ | プラットフォーム | 目的 |
+|------|-----------|----------------|------|
+| 1 | マニフェストスレッド① | X @Redo_C_ebiV | 旗を立てる。固定ツイート化 |
+| 2 | Dev.to記事 Part 4（競合調査編） | dev.to/redo_c_ebiv | 既存Part 1〜3の続編。英語圏リーチ |
+| 3 | Zenn記事（全部入り版） | zenn.dev/redocebiv | 日本語圏での権威確立 |
+| 4 | 競合分析スレッド② | X @Redo_C_ebiV | Zenn/Dev.to記事へのトラフィック誘導 |
+| 5 | 単発ポスト①〜⑩ | X @Redo_C_ebiV | 日替わりで1日1本。2週間分のストック |
+
+---
+
+## 記事とXの連動
+
+- 記事公開日にXでスレッド②を投稿し、最後のツイートに記事リンクを貼る
+- 単発ポストの中で記事の一部を引用して「詳しくはこちら→」で誘導
+- 記事内の比較マトリクスを画像化してXに投稿（視覚的に映える）
+
+---
+
+## 投稿タイミング
+
+| 言語 | 時間帯（JST） | 曜日 |
+|---|---|---|
+| 日本語 | 7:00〜8:00 / 12:00〜13:00 | 平日（技術系は火〜木が反応良い） |
+| 英語 | 22:00〜24:00 | 月〜水（Dev.to記事公開も同様） |
+
+---
+
+# PART 4: 曜日テーマ（継続のための仕組み）
+
+| 曜日 | テーマ | 内容例 |
+|------|--------|--------|
+| 月 | **#QuietMonday** | 今週「削ったもの」「シンプルにしたこと」の報告 |
+| 水 | **Vibe Coder Wednesday** | バイブコーダー向けTips、ツール紹介（自社以外も） |
+| 金 | **Build Friday** | redoCebiv開発の進捗、設計判断の共有 |
+
+---
+
+# PART 5: スプレッドシートのテーマ文字列（B列）
 
 Make → Claude API に渡す文字列。これをB列に入力する。
 
-### 英語テーマ
+## 英語テーマ
 
 | テーマ名 | B列入力文字列 |
 |---|---|
@@ -83,8 +299,11 @@ Make → Claude API に渡す文字列。これをB列に入力する。
 | デモ紹介 | EN demo tweet: redoCebiv upload ZIP pick feature see which files and why |
 | β登録CTA | EN beta CTA tweet: built for vibe coders who want to understand their own code |
 | 質問投稿 | EN question tweet: what's the hardest part of reading your AI-generated code |
+| Quiet Monday | EN quiet monday: what I removed or simplified this week, less is more |
+| Vibe Coder Wednesday | EN vibe coder wednesday: practical tip for reading AI-generated code |
+| Build Friday | EN build friday: weekly progress update on redoCebiv, honest and brief |
 
-### 日本語テーマ（JP:プレフィックスで識別）
+## 日本語テーマ（JP:プレフィックスで識別）
 
 | テーマ名 | B列入力文字列 |
 |---|---|
@@ -92,3 +311,5 @@ Make → Claude API に渡す文字列。これをB列に入力する。
 | Tip（読み方） | JP Tipツイート: React初心者がAI生成コードで最初に読むべきファイル順 |
 | デモ紹介 | JP デモツイート: redoCebivのZIPアップロード→機能選択→関連ファイル表示の流れ |
 | 感情ツイート | JP 感情ツイート: プログラミングを学びたいんじゃなく自分のアプリを直したいだけという声 |
+| Quiet Monday | JP QuietMonday: 今週削ったもの・シンプルにしたことの報告 |
+| 問いかけ | JP 問いかけツイート: AIで作ったアプリの最初のバグ修正で何をしたか選択肢付き投票 |

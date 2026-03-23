@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -68,9 +69,9 @@ export default function AnalyzingStatus({ projectId }: Props) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
         <p style={{ color: '#dc2626', fontSize: '14px' }}>{errorMessage}</p>
-        <a href="/projects/new" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'underline' }}>
+        <Link href="/projects/new" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'underline' }}>
           Try again
-        </a>
+        </Link>
       </div>
     )
   }

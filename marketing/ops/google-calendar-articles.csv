@@ -1,0 +1,338 @@
+Subject,Start Date,Start Time,End Time,All Day Event,Description,Location,Private
+"📄 [JP] Zenn公開 | AIに「直して」と頼むのをやめたら、開発が変わった",03/24/2026,09:00 AM,10:00 AM,False,"━━ 公開チェックリスト ━━
+□ published: true に変更
+□ emoji・タグ確認
+□ CTAリンク確認（quiet-tools.jp/redoCebiv）
+□ 公開後にXでシェア
+━━━━━━━━━━━━━━━━
+
+── DRAFT ──
+
+AIに「直して」と頼むのをやめたら、開発が変わった
+
+前回書いたファイルの見つけ方とか聞き方のコツ、あれはあれで役に立ってる。立ってるんだけど、なんか根っこのところが変わってない感じがずっとあった。
+
+何が変わったかというと、ある日Cursorに「直して」って打とうとして、ふと手が止まった。あれ、この料金カード壊れるの3回目じゃない？毎回AIに投げて、毎回直って、でも自分は何ひとつ覚えてない。
+
+
+## 「直してもらう」ループの怖さ
+
+壊れたらAIに投げる。直る。しばらくしてまた壊れる。また投げる。また直る。
+
+たしかに毎回直るんだけど、自分の中には何も積み上がってない。なぜ壊れたのか、何が変わったのか、次に同じことが起きたらどこを見ればいいのか。そういうの全部、AIのほうに行ってしまって、こっちの手元には何も残ってない。
+
+ある時ふと、AIがなかったら自分は何もできないなと思って、ちょっとゾッとした。便利っていうより、もう依存だなこれ、と。経験ごとAIに持ってかれてる感じ。大げさかもしれないけど、そう感じてしまったものはしょうがない。
+
+
+## 「直して」をやめて「説明して」に変えた
+
+きっかけはしょうもなくて、フッターがモバイルでコンテンツに被さるバグだった。いつもなら「モバイルでフッター被ってるの直して」って書くんだけど、その日はなんとなく気が向いて「なんでフッターが被ってるのか教えて。直さなくていいから」って打ってみた。
+
+そしたら返ってきた説明がすごくわかりやすくて。フッターにposition: fixedがついてるのに、メインコンテンツの下にそのぶんのpaddingが足りてないと。で、フッターの位置を決めてるファイルとコンテンツの余白を決めてるファイルは別々だから、それぞれ独立に直せるよ、と。
+
+なるほどねと思って、自分で直してみたら2分で終わった。で、このとき初めて「自分のアプリの一部を、自分で理解した」って感覚があった。
+
+別に全部わかる必要はなかった。「こっちの方向に進めばよさそう」っていう感覚があるだけで、怖さがかなり薄れる。
+
+
+## 実際に使っているプロンプト
+
+それ以来、AIへの聞き方がだいぶ変わった。よく使うのはこんな感じ：
+
+「このファイル何やってる？他にこのファイルに依存してるやつある？」
+
+「このコンポーネントのpadding変えたら、他のどのページに影響出る？」
+
+「ランディングページのお客様の声セクションを料金のとこより上に持っていきたいんだけど、触るファイルと、一番安全なやり方と、やらかしそうなポイント教えて」
+
+「他にやり方ない？それぞれのメリデメは？」
+
+「それ、抜け漏れない？見落としてるパターンとかない？」
+
+最後の2つはめちゃくちゃ使う。AIの最初の回答って、だいたい一番素直なやり方で返ってくるんだけど、それがベストとは限らない。「他には？」「本当にそれでいい？」ってしつこく聞くと、もっといい案が出てくることが多い。
+
+
+## それでも限界はある
+
+「説明して」に変えてから、アプリに対する理解度はたしかに上がった。でも限界もあって。
+
+まず、トークンの消費がえぐい。「このファイルの役割を詳しく教えて」を1日に何回もやると、上限ありのプランだと夕方にはもう残りが心もとなくなる。
+
+あと、1個のファイルについての説明は良くても、アプリ全体がどうなってるかは見えてこない。「このコンポーネントはここで使われてる」まではわかっても、「じゃあアプリ全体で、どのファイルが画面のどこに対応してるの？」って聞くと、さすがに答えきれない。
+
+結局ほしいのは、機能から入ってコードを理解できるもの。「ログインする」「タスクを追加する」みたいなユースケースを選んだら、関係するファイルと処理の流れを教えてくれる。AIに1個ずつ聞くんじゃなくて、最初から見えてる状態。
+
+[redoCebiv](https://tally.so/forms/Me5690/share) で作ろうとしてるのはそれ。同じようなことで困ってる人がいたら、ウェイトリスト覗いてみてほしい。
+
+
+## 3本書いて、気づいたこと
+
+怖さの正体はスキル不足じゃなくて、見通しの無さだった。ファイルの見つけ方を知ればだいぶマシになるし、AIへの聞き方を変えればもっとマシになる。でも、地図そのものが最初からあれば、そもそも怖くならずに済む。
+
+全部理解しなくていいと思う。地図があれば歩けるから。
+
+みんなはAIが作ったコードとどう付き合ってる？自分なりのやり方があったらコメントで教えてほしい。
+
+---
+
+[redoCebiv](https://tally.so/forms/Me5690/share) — 機能から入ってコードを理解するツール。ウェイトリスト受付中。",,False
+"📄 [EN] Dev.to公開 | Why I stopped asking AI to fix my code",03/24/2026,10:00 PM,11:00 PM,False,"━━ 公開チェックリスト ━━
+□ published: true に変更
+□ タイトル・タグ確認
+□ CTAリンク確認（quiet-tools.jp/redoCebiv）
+□ 公開後にXでシェア
+━━━━━━━━━━━━━━━━
+
+── DRAFT ──
+
+Why I stopped asking AI to fix my code and started asking it to explain it
+
+I knew the tips. Inspect element, global search, pages vs. components. It all worked. But something still felt off — like I was navigating the app without ever actually understanding it.
+
+The moment I realized what was wrong: I'd fixed the same pricing card three times in two weeks, and each time I had to start from scratch. I wasn't learning anything. I was just outsourcing.
+
+
+## The loop I was stuck in
+
+Something breaks. I paste the error into Cursor. It fixes it. Two days later, something else breaks — sometimes the same thing. I paste it again. It fixes it again.
+
+On paper, the problem gets solved every time. But I started noticing that I couldn't explain any of the fixes. Not even vaguely. I had no idea why the pricing card kept breaking, what connected it to the layout file that kept changing, or whether the ""fix"" was actually making the architecture worse each time.
+
+I was getting things done without gaining any experience. The AI was learning my codebase — and I was just watching. That felt wrong. Not morally wrong, just fragile. Like the whole thing depended on me always having access to this tool and never needing to think for myself.
+
+
+## The shift: ask it to explain, not fix
+
+The turning point was small. I had a bug — the footer was overlapping the content on mobile. Normally I would have said ""fix the footer overlap on mobile."" This time, I typed: ""Why is the footer overlapping the content on mobile? Don't fix it. Just explain what's happening.""
+
+The explanation was genuinely useful. It told me the footer had position: fixed but the main content didn't have enough bottom padding. It told me which file set the footer's position and which file controlled the content area's spacing. Two separate concerns, fixable independently.
+
+I made the change myself. Two minutes. And for the first time, I felt like I understood a piece of my own app.
+
+I didn't need to understand everything. Just enough orientation to know what I was doing and why. Not mastery — just direction.
+
+
+## What I actually ask now
+
+My prompts look completely different these days:
+
+""What does this file do, and what other files depend on it?""
+
+""If I change the padding in this component, what other pages will be affected?""
+
+""I want to move the testimonials section above the pricing section. What files are involved, what's the safest way, and what could go wrong?""
+
+""Are there any other approaches? What are the tradeoffs?""
+
+That last one is key. The AI's first answer is usually fine, but it tends to give you the most straightforward solution, not necessarily the best one. Pushing back — ""is there another way?"" — gets you a much more complete picture.
+
+Whether the AI acts as a teacher or a vending machine depends entirely on how you talk to it. Same tool, completely different outcomes.
+
+
+## This still doesn't scale
+
+Even with better prompts, there are real limits.
+
+Every explanation costs tokens. A detailed walk-through can eat through your daily cap by mid-afternoon. I've hit that wall more than once.
+
+And the bigger issue: the AI can explain one file at a time, but it can't show you the whole picture. When I ask about one component, I get a great answer about that component. But I can't see how it connects to the five other things that depend on it without asking five more questions. No bird's-eye view. No map.
+
+That's what pushed me to start building [redoCebiv](https://tally.so/forms/Me5690/share). Pick a use case — ""user logs in,"" ""task gets added"" — and immediately see which files are involved. Not a replacement for AI tools, but the context layer they're missing.
+
+If that sounds like a problem you have, the waitlist is open.
+
+
+## Wrapping up the series
+
+Three posts. The fear of touching your own app. The tricks that help you navigate it. The shift from asking the AI to fix things to asking it to teach you.
+
+None of this requires you to become a developer. You don't need to understand every line. You just need a map.
+
+---
+
+[redoCebiv](https://tally.so/forms/Me5690/share) — understand your app feature by feature, not file by file. Waitlist open.",,False
+"📄 [JP] Zenn公開 | AIでアプリを4つ出した。コードは1行も理解していなかった。",03/27/2026,09:00 AM,10:00 AM,False,"━━ 公開チェックリスト ━━
+□ published: true に変更
+□ emoji・タグ確認
+□ CTAリンク確認（quiet-tools.jp/redoCebiv）
+□ 公開後にXでシェア
+━━━━━━━━━━━━━━━━
+
+── DRAFT ──
+
+AIでアプリを4つ出した。コードは1行も理解していなかった。——バイブコーダーが「自分のコードを取り戻す」ために調べたこと全部
+
+プログラミングの経験はなかった。Cursor、v0、Claudeを使って、iOSアプリを4本作った。DarumaKnock、TimeBud、TravelGuard、Dessinate——全部App Storeに出した。
+
+ここまでは良かった。
+
+転機は、機能を追加しようとしたときだ。プロジェクトを開いた。何がどこにあるのかわからない。他人の家の中を、暗闘の中で歩いている感覚。
+
+この問題に直面しているのは自分だけなのか？解決策はあるのか？徹底的に調べた。この記事はその全記録だ。
+
+
+## セクション1：バイブコーダーの「理解負債」は構造的問題
+
+Karpathyの原文を読んだ。「差分を読まない」「Accept All」——これは「後で困る構造」をそのままに、速度だけを優先するアプローチだ。Know Your Memeは「自分のコードを管理・理解・デバッグできないバイブコーダーが急増した」と記録している。
+
+X上でバイラルになった事件がある。ゼロコードで構築したSaaSがセキュリティ攻撃を受けた。作者は「自分は技術者じゃないので対応に時間がかかっている」と告白した。これは笑い話じゃない。
+
+数字も出ている。Veracodeの調査ではAI生成コードの45%にセキュリティ脆弱性が含まれる。CodeRabbitの分析では、AI生成コードは人間のコードの1.7倍の問題を含む。
+
+O'Reilly Japanが『バイブコーディングを超えて』を出版した。第5章のタイトルは「生成されたコードを理解する：レビュー、改良、所有」。
+
+そして2026年2月、Karpathy自身が転換を発表した。「agentic engineering」——バイブコーディングから「品質を妥協しないAI活用」の時代へ。
+
+
+## セクション2：「コードを理解する」ツールを全部試した
+
+Sourcegraph Codyはリポジトリ全体をAIが理解する。強力だ。ただしIDE統合が必要で、エンタープライズ向けに作られている。
+
+Greptileは$180M評価のスタートアップ。コードグラフを構築してPRレビューを自律的にやってくれる。GitHub連携前提。
+
+Swimmはコードドキュメントを自動同期する。COBOLに対応している——これが、誰のために作られているかを教えてくれる。
+
+これらは本当に印象的なツールだ。でも全部、「プロ開発者」「チーム」が前提になっている。バイブコーダーがこれを使うのは、自転車の乗り方を覚えたばかりの人にF1カーの鍵を渡すようなものだ。
+
+Denigmaはコードを貼ると平易な英語で説明してくれる。ただし「どのファイルを貼るか」は自分で選ばないといけない。
+
+CursorとClaude Codeは、すでにプロジェクト全体を理解している。ただし両方「質問ドリブン」。「機能一覧を自動抽出して逆引きする」機能は、今のところどちらにもない。
+
+比較マトリクス：
+Sourcegraph Cody / プロ・チーム / セットアップ必要 / 全体理解○ / 質問不要✕
+Greptile / プロ・チーム / セットアップ必要 / 全体理解○ / 質問不要✕
+Denigma / 個人 / 不要 / 全体理解✕ / 質問不要✕
+ChatGPT/Claude / 誰でも / 不要 / 全体理解△ / 質問不要✕
+Cursor内蔵 / 開発者 / 不要 / 全体理解○ / 質問不要✕
+redoCebiv / バイブコーダー / 不要 / 全体理解○ / 質問不要○
+
+
+## セクション3：見えてきた「空白地帯」
+
+全ツールを試して、共通のパターンが見えた。
+
+全部のツールが「ユーザーは何を聞くか知っている」と前提している。
+
+でもバイブコーダーの本質的な課題は「何を聞けばいいかわからない」ことだ。
+
+ChatGPTに「このプロジェクトを説明して」と聞いたら「Next.jsのアプリです」と返ってきた。知ってる。それは知ってる。
+
+自分が欲しかったのは「このアプリには7つの機能があって、①ログイン機能はこの3ファイルが関係していて、②タスク追加はこの流れで動いていて、③ダッシュボードのレイアウトを変えたいならここから始めて」という情報だ。
+
+機能単位の理解。これを提供するツールはゼロだった。
+
+
+## セクション4：だからredoCebivを作っている
+
+「vibeCoder」を逆さから読むと「redoCebiv」になる。バイブコーディングを「やり直す」、という意味を込めた。
+
+3ステップで動く：
+1. プロジェクトのZIPをアップロードする（セットアップ不要）
+2. AIがコードを解析して「機能一覧」を自動抽出する
+3. 機能を選ぶと、関連ファイルと処理の流れが平易な言葉で表示される
+
+対応スタック：Next.js、Vue、Flutter、Swift、Rails等。
+
+設計の核心は「聞く前に見渡す」こと。Cursor/Claude Codeが「答える」ツールなら、redoCebivは「地図を渡す」ツールだ。
+
+現在ベータ準備中。ウェイトリスト受付中。
+
+
+## 締め
+
+Karpathyの言葉を借りて終わりにする。
+
+バイブコーディングは始まりだった。次のフェーズは「agentic engineering」——品質を妥協しないAI活用開発。そこに行くには、自分が作ったものを理解することが出発点になる。
+
+バイブコーディングの次のステップは「もっと速く作る」じゃない。「作ったものを取り戻す」だ。
+
+redoCebivのウェイトリストはこちら → quiet-tools.jp/redoCebiv",,False
+"📄 [EN] Dev.to公開 | I tested every 'understand your code' tool. None of them solved the real problem.",03/27/2026,10:00 PM,11:00 PM,False,"━━ 公開チェックリスト ━━
+□ published: true に変更
+□ タイトル・タグ確認
+□ CTAリンク確認（quiet-tools.jp/redoCebiv）
+□ 公開後にXでシェア
+━━━━━━━━━━━━━━━━
+
+── DRAFT ──
+
+I tested every 'understand your code' tool. None of them solved the real problem.
+
+After my last post, I did what any reasonable person would do. I went looking for tools that could help me understand what the AI had built. I tested everything I could find. Enterprise tools. Free extensions. ChatGPT. The works.
+
+Here's what I found — and what nobody's building yet.
+
+
+## The tools that exist (and who they're actually for)
+
+Sourcegraph Cody indexes your entire repo and lets you ask questions about it. Genuinely impressive. Requires IDE integration and setup. Built for enterprise teams.
+
+Greptile raised $180M. Builds a code graph and does autonomous investigation. Requires GitHub/GitLab integration. Also enterprise-first.
+
+Swimm auto-generates documentation that stays in sync with your code. Has COBOL support, which tells you something about who they're building for.
+
+These are genuinely impressive tools. They're also built for professional developers working in teams. If you're a vibe coder who built something with Cursor last weekend, this is like being handed the keys to a Formula 1 car when you just learned to ride a bike.
+
+Then there's the accessible stuff:
+- Denigma: paste code, get a plain English explanation. Works snippet by snippet. You still have to find the snippet.
+- CodeVisualizer (VS Code extension): generates flowcharts. Requires VS Code.
+- ChatGPT/Claude: can explain code if you paste it in.
+
+
+## The hidden assumption every tool makes
+
+Every single tool I tested assumes you know what to ask.
+
+Cody waits for your question. ChatGPT waits for your paste. Cursor kicks in when you type a query.
+
+But here's the thing about being a vibe coder who just hit the wall: you don't know what to ask. You don't even know what you don't know.
+
+I tried asking ChatGPT: ""explain this project.""
+It said: ""This is a Next.js application with Prisma ORM and Auth.js.""
+
+Yeah. I know that. That's like asking someone to explain your house and they say ""it has walls.""
+
+What I actually needed: ""This app has 7 features. The login flow touches these 3 files. If you want to change the dashboard layout, start here.""
+
+Feature-level understanding. Not file-level. Not line-level. Feature-level.
+
+Nobody offers this.
+
+
+## The real competition
+
+The biggest potential competitor isn't a startup. It's Cursor and Claude Code themselves.
+
+They already understand your project. If Cursor added a ""show me all features"" button tomorrow, the game changes.
+
+But right now, they don't have it. Their understanding is reactive — it answers questions. It doesn't proactively map your project.
+
+The second biggest competitor is just asking the AI one file at a time. It works. It's slow. It's like exploring a city by asking for directions at every intersection instead of looking at a map first.
+
+
+## The gap — and what I'm building
+
+After testing everything, the pattern became clear. The entire space is built around one assumption: the user can formulate technical questions. Vibe coders can't. Not yet.
+
+That's why I'm building redoCebiv (read it backwards).
+
+You upload a ZIP. The AI extracts a list of features — not files, not functions, but things like ""user logs in,"" ""task gets added."" You pick one, and it shows which files are involved and how the flow works. In plain language.
+
+No questions needed. The tool does the asking for you.
+
+
+## Even if you never use redoCebiv
+
+Before you modify anything in a vibe-coded project, map it first. Start from features, not files.
+
+You can do a rough version manually: ask your AI ""list every user-facing feature in this project, and for each one, list the files involved."" Not as clean, but better than opening files at random.
+
+Karpathy moved on from vibe coding to ""agentic engineering"" in early 2026 — AI leverage without sacrificing quality. Understanding what you shipped is becoming the skill, not shipping itself.
+
+---
+
+The best vibe coders of 2026 won't be the fastest shippers. They'll be the ones who understand what they shipped.
+
+Waitlist open → quiet-tools.jp/redoCebiv
+
+[redoCebiv](https://tally.so/forms/Me5690/share) — understand your app feature by feature, not file by file.",,False

@@ -27,11 +27,17 @@ export const PLANS = {
 
 export type PlanKey = keyof typeof PLANS
 
+export type BillingAction =
+  | 'initial_analysis'
+  | 'trace_generate'
+  | 'change_proposal'
+  | 'challenge_grade'
+
 export const CREDIT_COSTS = {
-  analyze: 10,
-  trace: 1,
-  proposal: 1,
-  grade: 0,
+  initial_analysis: 5,
+  trace_generate: 1,
+  change_proposal: 2,
+  challenge_grade: 0,
 } as const
 
 export const TOP_UP = {
@@ -41,4 +47,8 @@ export const TOP_UP = {
 
 export function getPlanInfo(plan: string) {
   return PLANS[plan as PlanKey] ?? PLANS.wanderer
+}
+
+export function getCreditCost(action: BillingAction) {
+  return CREDIT_COSTS[action]
 }

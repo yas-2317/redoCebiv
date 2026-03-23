@@ -1,9 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { consumeCredits } from '@/lib/credits'
-import { generateTrace } from '@/lib/anthropic/trace'
-import { buildFileContext, selectFilesForAnalysis } from '@/lib/zip'
+import { getOrCreateTrace } from '@/lib/traces/service'
 import { TraceView } from '@/components/trace/TraceView'
 
 interface PageProps {
@@ -17,102 +15,37 @@ export default async function TracePage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // プロジェクト取得（所有権確認 + zip_hash）
-  const { data: project } = await supabase
-    .from('projects')
-    .select('id, name, zip_hash, status')
-    .eq('id', projectId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!project || project.status !== 'ready') notFound()
-
-  // ユースケース取得
-  const { data: usecase } = await supabase
-    .from('usecases')
-    .select('id, name, description, related_file_paths')
-    .eq('id', ucId)
-    .eq('project_id', projectId)
-    .single()
-
-  if (!usecase) notFound()
-
-  // キャッシュ確認
-  const zipHash = project.zip_hash ?? ''
-  const { data: cached } = await supabase
-    .from('traces')
-    .select('related_files, flow, explanation')
-    .eq('usecase_id', ucId)
-    .eq('project_zip_hash', zipHash)
-    .single()
-
-  if (cached) {
-    return (
-      <TracePage_UI
-        projectId={projectId}
-        projectName={project.name}
-        trace={{ name: usecase.name, ...cached, cached: true }}
-      />
-    )
-  }
-
-  // クレジット消費
-  const ok = await consumeCredits(user.id, 1, 'trace_generate', projectId)
-  if (!ok) {
-    return (
-      <div style={{ maxWidth: '720px', paddingTop: '48px', textAlign: 'center' }}>
-        <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>Not enough charts to navigate.</p>
-        <Link href={`/projects/${projectId}`} style={{ fontSize: '13px', color: '#1d6187', textDecoration: 'none' }}>
-          ← Back to project
-        </Link>
-      </div>
-    )
-  }
-
-  // 関連ファイル取得
-  const relatedPaths: string[] = usecase.related_file_paths ?? []
-  let filesQuery = supabase
-    .from('project_files')
-    .select('path, content, language')
-    .eq('project_id', projectId)
-
-  if (relatedPaths.length > 0) {
-    filesQuery = filesQuery.in('path', relatedPaths)
-  } else {
-    filesQuery = filesQuery.limit(10)
-  }
-
-  const { data: files } = await filesQuery
-  if (!files || files.length === 0) notFound()
-
-  const extractedFiles = files.map(f => ({
-    path: f.path,
-    content: f.content,
-    language: f.language,
-    sizeBytes: f.content.length,
-  }))
-  const fileContext = buildFileContext(selectFilesForAnalysis(extractedFiles, 20_000))
-
-  // トレース生成
-  const trace = await generateTrace(
-    { name: usecase.name, description: usecase.description },
-    fileContext
-  )
-
-  // DB保存
-  await supabase.from('traces').insert({
-    usecase_id: ucId,
-    project_zip_hash: zipHash,
-    related_files: trace.related_files,
-    flow: trace.flow,
-    explanation: trace.explanation,
+  const result = await getOrCreateTrace({
+    supabase,
+    userId: user.id,
+    projectId,
+    usecaseId: ucId,
   })
+
+  if (result.kind === 'error') {
+    if (result.code === 'INSUFFICIENT_CREDITS') {
+      return (
+        <div style={{ maxWidth: '720px', paddingTop: '48px', textAlign: 'center' }}>
+          <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>Not enough charts to navigate.</p>
+          <Link href={`/projects/${projectId}`} style={{ fontSize: '13px', color: '#1d6187', textDecoration: 'none' }}>
+            ← Back to project
+          </Link>
+        </div>
+      )
+    }
+
+    if (result.code === 'TRACE_SAVE_FAILED' || result.code === 'TRACE_GENERATION_FAILED') {
+      throw new Error(result.code)
+    }
+
+    notFound()
+  }
 
   return (
     <TracePage_UI
       projectId={projectId}
-      projectName={project.name}
-      trace={{ name: usecase.name, ...trace, cached: false }}
+      projectName={result.projectName}
+      trace={{ name: result.usecaseName, ...result.trace, cached: result.cached }}
     />
   )
 }

@@ -1,16 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { createClient as createServiceClient, type SupabaseClient } from '@supabase/supabase-js'
+import { CREDIT_COSTS } from '@/lib/billing/config'
 import { consumeCredits } from '@/lib/credits'
+import { refundCredits } from '@/lib/credits/refund'
 import { inngest } from '@/lib/inngest/client'
+import { extractZip, hasZipMagicBytes } from '@/lib/zip'
+import { enforceRateLimit, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/security/rate-limit'
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
+
+async function refundCreditsWithAudit(params: {
+  serviceClient: SupabaseClient
+  userId: string
+  projectId: string
+  amount: number
+  reason: 'upload_failed' | 'queue_failed'
+}) {
+  const { serviceClient, userId, projectId, amount, reason } = params
+
+  const { error } = await refundCredits(serviceClient, {
+    userId,
+    amount,
+    projectId,
+  })
+
+  if (error) {
+    console.error('refund_credits failed', {
+      userId,
+      projectId,
+      amount,
+      reason,
+      error,
+    })
+    return false
+  }
+
+  return true
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const allowed = await enforceRateLimit({
+    supabase,
+    actorKey: user.id,
+    ...RATE_LIMITS.projectUpload,
+  })
+  if (!allowed) {
+    return rateLimitExceededResponse()
   }
 
   const formData = await request.formData()
@@ -28,18 +70,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'FILE_TOO_LARGE' }, { status: 400 })
   }
 
-  const projectName = name.trim() || file.name.replace(/\.zip$/, '')
-
-  // 残高確認のみ（消費はアップロード成功後）
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('credit_balance')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || profile.credit_balance < 5) {
-    return NextResponse.json({ error: 'INSUFFICIENT_CREDITS' }, { status: 402 })
+  const buffer = Buffer.from(await file.arrayBuffer())
+  if (!hasZipMagicBytes(buffer)) {
+    return NextResponse.json({ error: 'INVALID_FILE' }, { status: 400 })
   }
+
+  try {
+    extractZip(buffer)
+  } catch (error) {
+    console.error('ZIP validation error:', error)
+    return NextResponse.json({ error: 'INVALID_ZIP' }, { status: 400 })
+  }
+
+  const projectName = name.trim() || file.name.replace(/\.zip$/, '')
 
   // プロジェクト作成
   const { data: project, error: projectError } = await supabase
@@ -50,7 +93,14 @@ export async function POST(request: NextRequest) {
 
   if (projectError || !project) {
     console.error('Project insert error:', projectError)
-    return NextResponse.json({ error: 'DB_ERROR', detail: projectError?.message }, { status: 500 })
+    return NextResponse.json({ error: 'DB_ERROR' }, { status: 500 })
+  }
+
+  // 先にアトミックに消費してから外部副作用へ進む
+  const ok = await consumeCredits(user.id, CREDIT_COSTS.initial_analysis, 'initial_analysis', project.id)
+  if (!ok) {
+    await supabase.from('projects').delete().eq('id', project.id)
+    return NextResponse.json({ error: 'INSUFFICIENT_CREDITS' }, { status: 402 })
   }
 
   // Supabase Storage にアップロード（service role で権限を確保）
@@ -59,7 +109,6 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
   const storagePath = `${user.id}/${project.id}/source.zip`
-  const buffer = Buffer.from(await file.arrayBuffer())
 
   const { error: uploadError } = await serviceClient.storage
     .from('project_zips')
@@ -67,17 +116,27 @@ export async function POST(request: NextRequest) {
 
   if (uploadError) {
     console.error('Storage upload error:', uploadError)
-    await supabase.from('projects').delete().eq('id', project.id)
-    return NextResponse.json({ error: 'UPLOAD_FAILED', detail: uploadError.message }, { status: 500 })
-  }
+    const refunded = await refundCreditsWithAudit({
+      serviceClient,
+      userId: user.id,
+      projectId: project.id,
+      amount: CREDIT_COSTS.initial_analysis,
+      reason: 'upload_failed',
+    })
 
-  // アップロード成功後にクレジット消費
-  const ok = await consumeCredits(user.id, 5, 'initial_analysis', project.id)
-  if (!ok) {
-    // 万が一ここで残高不足になった場合もロールバック
-    await serviceClient.storage.from('project_zips').remove([storagePath])
-    await supabase.from('projects').delete().eq('id', project.id)
-    return NextResponse.json({ error: 'INSUFFICIENT_CREDITS' }, { status: 402 })
+    if (refunded) {
+      await supabase.from('projects').delete().eq('id', project.id)
+    } else {
+      await supabase
+        .from('projects')
+        .update({
+          status: 'error',
+          error_message: 'Upload failed and credit refund requires manual review.',
+        })
+        .eq('id', project.id)
+    }
+
+    return NextResponse.json({ error: 'UPLOAD_FAILED' }, { status: 500 })
   }
 
   // status を analyzing に更新
@@ -91,12 +150,24 @@ export async function POST(request: NextRequest) {
     await inngest.send({ name: 'project/analyze', data: { projectId: project.id } })
   } catch (err) {
     console.error('Inngest send error:', err)
-    await serviceClient.rpc('refund_credits', {
-      p_user_id: user.id,
-      p_amount: 5,
-      p_project_id: project.id,
+    const refunded = await refundCreditsWithAudit({
+      serviceClient,
+      userId: user.id,
+      projectId: project.id,
+      amount: CREDIT_COSTS.initial_analysis,
+      reason: 'queue_failed',
     })
-    await supabase.from('projects').update({ status: 'error' }).eq('id', project.id)
+
+    await supabase
+      .from('projects')
+      .update({
+        status: 'error',
+        error_message: refunded
+          ? 'Analysis job setup failed. Please try again.'
+          : 'Analysis job setup failed and credit refund requires manual review.',
+      })
+      .eq('id', project.id)
+
     return NextResponse.json({ error: 'QUEUE_FAILED' }, { status: 500 })
   }
 

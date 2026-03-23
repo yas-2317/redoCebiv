@@ -73,7 +73,7 @@ export const analyzeProject = inngest.createFunction(
 
     // Step 3: ユースケース抽出（Claude Haiku）
     const usecases = await step.run('extract-usecases', async () => {
-      const selectedFiles = selectFilesForAnalysis(files, TOKEN_LIMITS.USECASE_EXTRACTION)
+      const selectedFiles = selectFilesForAnalysis(files, TOKEN_LIMITS.USECASE_EXTRACTION, stack)
       const fileContext = buildFileContext(selectedFiles)
       return extractUsecases(fileContext, stack)
     })
@@ -96,7 +96,7 @@ export const analyzeProject = inngest.createFunction(
 
     // Step 5: 課題生成（Claude Haiku）
     await step.run('generate-challenges', async () => {
-      const selectedFiles = selectFilesForAnalysis(files, TOKEN_LIMITS.CHALLENGE_GENERATION)
+      const selectedFiles = selectFilesForAnalysis(files, TOKEN_LIMITS.CHALLENGE_GENERATION, stack)
       const fileContext = buildFileContext(selectedFiles)
       const challenges = await generateChallenges(fileContext, usecases, stack)
 
@@ -116,6 +116,7 @@ export const analyzeProject = inngest.createFunction(
           description: ch.description,
           type: normalizeType(ch.type),
           difficulty: ch.difficulty,
+          format: ch.format,
           answer: ch.answer,
           hint: ch.hint,
         }))

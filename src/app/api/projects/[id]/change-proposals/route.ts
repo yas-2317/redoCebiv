@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { consumeCredits } from '@/lib/credits'
-import { generateProposal } from '@/lib/anthropic/proposal'
-import { buildFileContext, selectFilesForAnalysis } from '@/lib/zip'
+import { createProposal } from '@/lib/proposals/service'
+import { enforceRateLimit, RATE_LIMITS, rateLimitExceededResponse } from '@/lib/security/rate-limit'
+import { isUuid, validateChangeProposalInput } from '@/lib/security/validation'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: projectId } = await params
+  if (!isUuid(projectId)) {
+    return NextResponse.json({ error: 'INVALID_PROJECT_ID' }, { status: 400 })
+  }
+
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -16,68 +20,49 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json() as { intent?: string }
-  const intent = body.intent?.trim()
-  if (!intent) {
-    return NextResponse.json({ error: 'MISSING_INTENT' }, { status: 400 })
+  const allowed = await enforceRateLimit({
+    supabase,
+    actorKey: user.id,
+    ...RATE_LIMITS.changeProposal,
+  })
+  if (!allowed) {
+    return rateLimitExceededResponse()
   }
 
-  // プロジェクト取得（所有権確認）
-  const { data: project } = await supabase
-    .from('projects')
-    .select('id, status')
-    .eq('id', projectId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!project || project.status !== 'ready') {
-    return NextResponse.json({ error: 'PROJECT_NOT_FOUND' }, { status: 404 })
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'INVALID_JSON' }, { status: 400 })
   }
 
-  // クレジット消費
-  const ok = await consumeCredits(user.id, 2, 'change_proposal', projectId)
-  if (!ok) {
-    return NextResponse.json({ error: 'INSUFFICIENT_CREDITS' }, { status: 402 })
+  const parsed = validateChangeProposalInput(body)
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
   }
 
-  // ファイル取得（20kトークン上限）
-  const { data: files } = await supabase
-    .from('project_files')
-    .select('path, content, language')
-    .eq('project_id', projectId)
+  const result = await createProposal({
+    supabase,
+    userId: user.id,
+    projectId,
+    intent: parsed.value.intent,
+  })
 
-  if (!files || files.length === 0) {
-    return NextResponse.json({ error: 'FILES_NOT_FOUND' }, { status: 404 })
+  if (result.kind === 'error') {
+    const statusByCode = {
+      PROJECT_NOT_FOUND: 404,
+      FILES_NOT_FOUND: 404,
+      INSUFFICIENT_CREDITS: 402,
+      PROPOSAL_GENERATION_FAILED: 500,
+      PROPOSAL_SAVE_FAILED: 500,
+    } as const
+
+    return NextResponse.json({ error: result.code }, { status: statusByCode[result.code] })
   }
-
-  const extractedFiles = files.map(f => ({
-    path: f.path,
-    content: f.content,
-    language: f.language,
-    sizeBytes: f.content.length,
-  }))
-  const fileContext = buildFileContext(selectFilesForAnalysis(extractedFiles, 20_000))
-
-  // 変更候補生成
-  const proposal = await generateProposal(intent, fileContext)
-
-  // DB保存
-  const { data: saved } = await supabase
-    .from('change_proposals')
-    .insert({
-      project_id: projectId,
-      user_id: user.id,
-      intent,
-      change_type: proposal.change_type,
-      difficulty: proposal.difficulty,
-      candidates: proposal.candidates,
-    })
-    .select('id')
-    .single()
 
   return NextResponse.json({
-    id: saved?.id,
-    intent,
-    ...proposal,
+    id: result.proposalId,
+    intent: result.intent,
+    ...result.proposal,
   })
 }
