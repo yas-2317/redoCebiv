@@ -71,7 +71,7 @@
 
 この handoff では `challenge_grade = 0` を前提にしている。
 
-ただし、過去の `design/decisions.md` 内 ADR-005 には `1cr` の記述が残っているため、
+ただし、過去の `docs/design/decisions.md` 内 ADR-005 には `1cr` の記述が残っているため、
 **実装前に設計ログの更新が必要**。
 
 推奨:
@@ -84,12 +84,12 @@
 ### 仕様書反映先
 
 第一候補:
-- `design/current-implementation-spec.md`
+- `docs/design/current-implementation-spec.md`
 
 追記候補セクション:
 - `## 9. progress 指標仕様`
 
-必要なら将来的に `design/progress-spec.md` を分離してもよいが、
+必要なら将来的に `docs/design/progress-spec.md` を分離してもよいが、
 現時点では `current-implementation-spec.md` へ追記で十分。
 
 ---
@@ -213,7 +213,7 @@ const rank = { missed: 0, with_hint: 1, self: 2 }
 - `stackRows` では `getPrimaryStack(project.stack)` を使う
 
 推奨:
-- この判断を `design/decisions.md` に残す
+- この判断を `docs/design/decisions.md` に残す
 - 文言は「stack 別 progress は primary stack のみに帰属させる」でよい
 
 ---
@@ -230,7 +230,7 @@ const rank = { missed: 0, with_hint: 1, self: 2 }
 | `challenge_grade` | 0 |
 
 前提条件:
-- `challenge_grade = 0` を採用する場合は、先に `design/decisions.md` 側の記録を更新すること
+- `challenge_grade = 0` を採用する場合は、先に `docs/design/decisions.md` 側の記録を更新すること
 
 ### 追加 / 整理候補
 
@@ -347,8 +347,8 @@ getProjectProgress(user.id, projectId)
 
 ### Step 1.5
 - `billing/config.ts` の action / cost 定義だけ先に確定
-- `challenge_grade = 0` の根拠を `design/decisions.md` に記録
-- `stack 別 progress は primary stack のみ` の判断も `design/decisions.md` に記録
+- `challenge_grade = 0` の根拠を `docs/design/decisions.md` に記録
+- `stack 別 progress は primary stack のみ` の判断も `docs/design/decisions.md` に記録
 
 ### Step 2
 - `src/lib/progress/types.ts` 作成
@@ -401,9 +401,9 @@ UX 表現の最終決定は未了。
 
 ## 8. 関連ドキュメント
 
-- `design/current-implementation-spec.md`
-- `design/decisions.md`
-- `handoffs/rv_20260320_stack-expansion-progress-design_handoff.md`
+- `docs/design/current-implementation-spec.md`
+- `docs/design/decisions.md`
+- `docs/handoffs/rv_20260320_stack-expansion-progress-design_handoff.md`
 
 ---
 

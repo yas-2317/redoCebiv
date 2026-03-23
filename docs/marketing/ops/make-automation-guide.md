@@ -102,7 +102,7 @@ Day 7: 週振り返り + β登録案内
     "system": "[system-promptファイルの内容をここに貼る]"
   }
   ```
-  ※ system promptは `/marketing/claude-prompt.md` を参照
+  ※ system promptは `/docs/marketing/ops/claude-prompt.md` を参照
 
 #### モジュール4: Google Sheets - Update Row
 

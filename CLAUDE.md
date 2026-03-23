@@ -1,8 +1,8 @@
 # redoCebiv — CLAUDE.md
 
 ## 参照ファイル
-- 設計書: projects/redoCebiv/design/overview.md
-- 設計判断: projects/redoCebiv/design/decisions.md
+- 設計書: projects/redoCebiv/docs/design/overview.md
+- 設計判断: projects/redoCebiv/docs/design/decisions.md
 
 ## プロダクト概要
 
@@ -45,7 +45,7 @@ vibe coding で作れたアプリを、機能起点で理解し、軽い変更�
 
 ## ハンドオフ
 
-- 保存場所: `projects/redoCebiv/handoffs/`
+- 保存場所: `projects/redoCebiv/docs/handoffs/`
 - 命名規則: `rv_[YYYYMMDD]_[内容]_handoff.md`（例: `rv_20260320_trace-feature_handoff.md`）
 - Linear イシューに対応する場合は `rv_RV-[番号]_handoff.md` でも可
 

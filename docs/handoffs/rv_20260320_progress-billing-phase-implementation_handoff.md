@@ -80,8 +80,8 @@
 ### 4. 仕様書と decisions を更新
 
 変更:
-- `design/current-implementation-spec.md`
-- `design/decisions.md`
+- `docs/design/current-implementation-spec.md`
+- `docs/design/decisions.md`
 
 追記内容:
 - progress 指標仕様

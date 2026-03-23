@@ -215,7 +215,7 @@ submit route では grading 課金が存在しないため、今回の主対象�
 
 推奨:
 
-- `design/decisions.md` に記録を追記する
+- `docs/design/decisions.md` に記録を追記する
 
 候補文言:
 

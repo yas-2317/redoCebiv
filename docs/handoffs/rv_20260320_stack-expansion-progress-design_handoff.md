@@ -171,7 +171,7 @@ service の責務:
 ### 8. 実装仕様を文書化
 
 新規:
-- `design/current-implementation-spec.md`
+- `docs/design/current-implementation-spec.md`
 
 内容:
 - 現在の stack 対応方針
@@ -187,7 +187,7 @@ service の責務:
 ### 9. 設計判断ログを更新
 
 変更:
-- `design/decisions.md`
+- `docs/design/decisions.md`
 
 追加 ADR:
 - ADR-009: 多スタック対応では primary stack を明示解決する
@@ -293,8 +293,8 @@ service の責務:
 - `src/lib/zip/index.ts`
 - `src/lib/traces/service.ts`
 - `src/lib/proposals/service.ts`
-- `design/current-implementation-spec.md`
-- `design/decisions.md`
+- `docs/design/current-implementation-spec.md`
+- `docs/design/decisions.md`
 
 ---
 

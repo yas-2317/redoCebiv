@@ -38,7 +38,7 @@ Phase 1（認証・基盤）の続き。
 | 多様性担保方法 | プロンプトで「異なるページ・画面を起点にして選ぶ」と指示（Case B） |
 | 将来の拡張方針 | 全機能一覧からユーザーが「学びたいもの」を選択するUIに拡張予定 |
 
-これらは設計書（`design/mvp-spec.md` / `design/ai-design.md` / `design/architecture.md`）に反映済み。
+これらは設計書（`docs/design/mvp-spec.md` / `docs/design/ai-design.md` / `docs/design/architecture.md`）に反映済み。
 
 ---
 
@@ -292,7 +292,7 @@ ZIPアップロード画面に以下を表示する：
 
 ## 参照設計書
 
-- `design/ai-design.md` — プロンプト全文・パイプライン詳細
-- `design/data-model.md` — テーブル定義・RLS・consume_credits関数
-- `design/architecture.md` — フォルダ構成・SC/CC境界・Storage設定
-- `design/mvp-spec.md` — 非機能要件・画面仕様・APIレスポンス形式
+- `docs/design/ai-design.md` — プロンプト全文・パイプライン詳細
+- `docs/design/data-model.md` — テーブル定義・RLS・consume_credits関数
+- `docs/design/architecture.md` — フォルダ構成・SC/CC境界・Storage設定
+- `docs/design/mvp-spec.md` — 非機能要件・画面仕様・APIレスポンス形式
